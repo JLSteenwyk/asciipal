@@ -39,6 +39,31 @@ AsciiPal transitions between expressive states based on your input patterns:
 - Gentle escalation: suggestion → insistence → ASCII tantrum
 - Tracks total active time and breaks taken per session
 
+### 🌱 Living Aquarium
+
+- Plants grow *around* the character as you accumulate active time
+- Four growth stages unlock at 1, 3, 5, and 10 minutes of activity
+- A progress bar below the aquarium shows how close you are to the next plant level
+
+```
+[####--------------------] Plant 1/4    (growing toward level 2)
+[########################] MAX          (fully grown)
+```
+
+### 🫧 Bubbles, Fireflies & Companions
+
+- **Rising bubbles** (`·`, `°`, `o`) float upward from the bottom, spawning faster with more activity
+- **Fireflies** (`*`, `+`, `·`) drift and blink around the character at night or during flow states
+- **Companion creatures** unlock as you hit milestones:
+
+| Creature | Sprite | Unlock |
+|----------|--------|--------|
+| Fish | `><>` | 500 keypresses |
+| Butterfly | `}{` | 30 min active time |
+| Snail | `@/` | 3 breaks taken |
+
+All effects overlay in empty spaces — they never obscure the character or plants.
+
 ### 📊 Activity Awareness
 
 - Monitors typing speed (WPM estimate)
@@ -151,6 +176,8 @@ asciipal/
 ├── state_machine.py      # State transitions and cooldown logic
 ├── input_monitor.py      # Keyboard and mouse listeners (pynput)
 ├── activity_tracker.py   # WPM, click rate, and movement calculations
+├── aquarium.py           # Progress bar and plant growth decorations
+├── effects.py            # Bubbles, fireflies, and companion creatures
 ├── break_manager.py      # Timer logic and reminder escalation
 ├── overlay.py            # Tkinter transparent window management
 ├── config.py             # YAML config loader and defaults

@@ -4,6 +4,7 @@ import argparse
 import platform
 import subprocess
 from dataclasses import asdict
+from datetime import datetime
 import signal
 import sys
 from time import sleep
@@ -14,6 +15,7 @@ from asciipal.activity_tracker import ActivityTracker
 from asciipal.aquarium import build_aquarium_scene
 from asciipal.break_manager import BreakManager, BreakStatus
 from asciipal.character import CharacterRenderer
+from asciipal.effects import EffectsManager
 import yaml
 
 from asciipal.config import Config, ensure_config_file, load_config, resolve_config_path
@@ -31,18 +33,53 @@ def _make_wave(length: int) -> str:
     return (unit * ((length + 1) // 2))[:length]
 
 
+def _merge_plants(char_art: str, plant_lines: list[str], content_w: int) -> list[str]:
+    """Overlay plant characters onto centered character art lines.
+
+    Plants align to the bottom of the character art and only fill spaces
+    so they appear to grow *around* the character.
+    """
+    char_lines = char_art.split("\n")
+    centered = [f"{line:^{content_w}}" for line in char_lines]
+    if not plant_lines:
+        return centered
+
+    result_height = max(len(centered), len(plant_lines))
+    # Pad centered lines at the top if plants are taller than the character
+    while len(centered) < result_height:
+        centered.insert(0, " " * content_w)
+
+    plant_start = result_height - len(plant_lines)
+    merged: list[str] = []
+    for i, line in enumerate(centered):
+        plant_idx = i - plant_start
+        if 0 <= plant_idx < len(plant_lines):
+            buf = list(line.ljust(content_w))
+            plant_line = plant_lines[plant_idx]
+            for j, ch in enumerate(plant_line):
+                if j < content_w and ch != " " and buf[j] == " ":
+                    buf[j] = ch
+            merged.append("".join(buf))
+        else:
+            merged.append(line)
+    return merged
+
+
 def _compose_display(
     char_art: str,
     above_lines: list[str],
     plant_lines: list[str],
+    progress_line: str,
     status_line: str,
     achievement_line: str,
     inner_w: int,
+    overlays: list[tuple[int, int, str]] | None = None,
 ) -> str:
     """Build the aquarium display with water surface and sandy ground.
 
-    Progress bar and weather go above the character. Plants sit at ground
-    level between the character and the ground border.
+    Weather effects go above the character. Plants grow around the
+    character. Effect overlays (bubbles, fireflies, creatures) fill
+    empty spaces. Progress bar sits below the aquarium ground.
     """
     top = f"╭{'~' * inner_w}╮"
     ground_top = f"╔{'═' * inner_w}╗"
@@ -50,25 +87,32 @@ def _compose_display(
     total_w = inner_w + 2
     content_w = inner_w - 2  # 1-char padding on each side
 
-    def row(text: str) -> str:
-        return f"│ {text:^{content_w}} │"
-
-    parts: list[str] = [top]
-
+    # Build content lines, all exactly content_w wide
+    content_lines: list[str] = []
     for line in above_lines:
         if line.strip():
-            parts.append(row(line))
+            content_lines.append(f"{line:^{content_w}}")
+    for line in _merge_plants(char_art, plant_lines, content_w):
+        content_lines.append(f"{line:^{content_w}}")
 
-    for line in char_art.split("\n"):
-        parts.append(row(line))
+    # Apply effect overlays (only fill empty spaces)
+    if overlays:
+        for row_idx, col, ch in overlays:
+            if 0 <= row_idx < len(content_lines) and 0 <= col < content_w:
+                line = content_lines[row_idx]
+                if col < len(line) and line[col] == " ":
+                    content_lines[row_idx] = line[:col] + ch + line[col + 1:]
 
-    for line in plant_lines:
-        if line.strip():
-            parts.append(row(line))
+    # Frame with borders
+    parts: list[str] = [top]
+    for line in content_lines:
+        parts.append(f"│ {line} │")
 
     parts.append(ground_top)
     parts.append(ground_bot)
 
+    if progress_line:
+        parts.append(f"{progress_line:^{total_w}}")
     if status_line:
         parts.append(f"{status_line:^{total_w}}")
     if achievement_line:
@@ -108,6 +152,7 @@ class AsciiPalApp:
         self.character = CharacterRenderer(config)
         self.time_awareness = TimeAwarenessManager(config)
         self.achievements = AchievementManager()
+        self.effects = EffectsManager()
         # Fixed inner width for the aquarium (must be even for wave pattern).
         raw_inner = max(self.character.max_art_width + 16, 36)
         self._display_inner_w = raw_inner + (raw_inner % 2)
@@ -181,20 +226,34 @@ class AsciiPalApp:
             above_lines.append(time_effect[0])
         if weather_effect is not None and weather_effect[0]:
             above_lines.append(weather_effect[0])
-        # Aquarium scene: progress bar above, plants at ground level
+        # Aquarium scene: plants around character, progress bar below
         totals = self.tracker.totals(now=now)
         content_w = self._display_inner_w - 2
         progress_lines, plant_lines = build_aquarium_scene(
             totals, content_w, self._anim_frame,
         )
-        above_lines.extend(progress_lines)
+        progress_line = progress_lines[0] if progress_lines else ""
+
+        # Effects: bubbles, fireflies, companion creatures
+        non_empty_above = [l for l in above_lines if l.strip()]
+        char_lines = art.split("\n")
+        content_h = len(non_empty_above) + max(len(char_lines), len(plant_lines))
+        hour = datetime.now().hour
+        is_night = hour >= 21 or hour < 6
+        is_flow = state in ("excited", "cheering")
+        overlays = self.effects.update(
+            totals, self.break_manager.breaks_taken,
+            content_w, content_h, self._anim_frame,
+            is_night=is_night, is_flow=is_flow,
+        )
 
         achievement_line = self.achievements.update(totals, self.break_manager.breaks_taken)
         if self.overlay is not None:
             display = _compose_display(
                 art, above_lines, plant_lines,
-                break_line, achievement_line or "",
+                progress_line, break_line, achievement_line or "",
                 self._display_inner_w,
+                overlays=overlays,
             )
             self.overlay.update_text(display)
         else:

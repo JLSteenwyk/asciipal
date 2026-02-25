@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from asciipal.activity_tracker import ActivityTotals
+from asciipal.app import _merge_plants
 from asciipal.aquarium import (
     PLANT_THRESHOLDS,
     _plant_level,
@@ -126,6 +127,45 @@ class TestBuildPlants:
         for level in range(1, 5):
             lines = _build_plants(level, 34, frame=0)
             assert len(lines) == level
+
+
+class TestMergePlants:
+    def test_no_plants_returns_centered_art(self) -> None:
+        lines = _merge_plants("AB", [], 10)
+        assert len(lines) == 1
+        assert "AB" in lines[0]
+        assert len(lines[0]) == 10
+
+    def test_plants_fill_spaces_around_art(self) -> None:
+        # Art is narrow and centered; plants should fill empty positions
+        art = "XX"
+        plant_lines = ["(  )  (  )"]  # 10 chars with parens at edges
+        merged = _merge_plants(art, plant_lines, 10)
+        assert len(merged) == 1
+        combined = merged[0]
+        assert "XX" in combined
+        assert "(" in combined  # plant chars present
+
+    def test_plants_do_not_overwrite_art(self) -> None:
+        art = "ABCDEFGHIJ"  # fills entire width
+        plant_lines = ["(((((((((("]
+        merged = _merge_plants(art, plant_lines, 10)
+        assert merged[0] == "ABCDEFGHIJ"
+
+    def test_plants_align_to_bottom(self) -> None:
+        art = "A\nB\nC"  # 3 lines
+        plant_lines = ["X"]  # 1 row of plants
+        merged = _merge_plants(art, plant_lines, 5)
+        assert len(merged) == 3
+        # Only the last line should have plant chars
+        assert "X" not in merged[0]
+        assert "X" not in merged[1]
+
+    def test_taller_plants_extend_above_art(self) -> None:
+        art = "X"  # 1 line
+        plant_lines = [") (", "( )"]  # 2 rows
+        merged = _merge_plants(art, plant_lines, 5)
+        assert len(merged) == 2  # extended to fit plants
 
 
 class TestBuildScene:
