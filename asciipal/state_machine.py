@@ -21,6 +21,10 @@ class StateMachine:
         self.cooldown_seconds = config.state_cooldown_seconds if cooldown_seconds is None else cooldown_seconds
         self.state: State = "idle"
         self._last_transition = monotonic() - self.cooldown_seconds
+        self._sweating: bool = False
+
+    def set_sweating(self, val: bool) -> None:
+        self._sweating = val
 
     def update(self, snapshot: ActivitySnapshot, now: float | None = None) -> TransitionResult:
         ts = monotonic() if now is None else now
@@ -49,6 +53,8 @@ class StateMachine:
             return "alarmed"
         if snapshot.mouse_speed >= self.config.dizzy_mouse_speed:
             return "dizzy"
+        if self._sweating:
+            return "sweating"
         if snapshot.typing_wpm >= self.config.typing_fast_wpm:
             return "excited"
         if snapshot.total_active_seconds >= self.config.cheering_after_minutes * 60:

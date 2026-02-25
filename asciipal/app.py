@@ -12,7 +12,8 @@ from time import monotonic
 
 from asciipal.achievements import AchievementManager
 from asciipal.activity_tracker import ActivityTracker
-from asciipal.aquarium import build_aquarium_scene
+from asciipal.aquarium import build_aquarium_scene, biome_stage, build_biome_decorations
+from asciipal.battery import BatteryManager
 from asciipal.break_manager import BreakManager, BreakStatus
 from asciipal.character import CharacterRenderer
 from asciipal.effects import EffectsManager
@@ -127,6 +128,10 @@ def _compose_display(
     weather_panel_lines: list[str] | None = None,
     sysinfo_lines: list[str] | None = None,
     anim_frame: int = 0,
+    pomodoro_panel_lines: list[str] | None = None,
+    goal_line: str = "",
+    streak_line: str = "",
+    biome_decorations: list[tuple[int, int, str]] | None = None,
 ) -> ColoredDisplay:
     """Build the aquarium display with water surface and sandy ground.
 
@@ -183,6 +188,15 @@ def _compose_display(
         content_lines.append(centered)
         content_regions.append(region_row[:content_w])
 
+    # Apply biome decorations (only fill empty spaces)
+    if biome_decorations:
+        for row_idx, col, ch in biome_decorations:
+            if 0 <= row_idx < len(content_lines) and 0 <= col < content_w:
+                line = content_lines[row_idx]
+                if col < len(line) and line[col] == " ":
+                    content_lines[row_idx] = line[:col] + ch + line[col + 1:]
+                    content_regions[row_idx][col] = "biome"
+
     # Apply effect overlays (only fill empty spaces)
     if overlays:
         for row_idx, col, ch, tag in overlays:
@@ -228,10 +242,23 @@ def _compose_display(
         all_regions.append(
             ["achievement" if ch != " " else "default" for ch in centered]
         )
+    if goal_line:
+        centered = f"{goal_line:^{total_w}}"
+        parts.append(centered)
+        all_regions.append(
+            ["goal" if ch != " " else "default" for ch in centered]
+        )
+    if streak_line:
+        centered = f"{streak_line:^{total_w}}"
+        parts.append(centered)
+        all_regions.append(
+            ["streak" if ch != " " else "default" for ch in centered]
+        )
 
     # Sub-panels below the aquarium
     sysinfo_content = sysinfo_lines if sysinfo_lines else []
     for panel_tag, panel_title, panel_content_lines in [
+        ("pomodoro", "Pomodoro", pomodoro_panel_lines or []),
         ("weather_panel", "Weather", weather_panel_lines or []),
         ("sysinfo", "System", sysinfo_content),
     ]:
@@ -317,8 +344,13 @@ class AsciiPalApp:
             except Exception as exc:
                 self.headless = True
                 self.startup_notes.append(f"GUI overlay unavailable: {exc}. Falling back to headless mode.")
+        self._goal_met = False
+        self._last_session_seconds: float = 0.0
         self.weather = WeatherManager(config)
         self.system_resources = SystemResourcesManager()
+        self.battery: BatteryManager | None = None
+        if getattr(config, "battery_enabled", True):
+            self.battery = BatteryManager()
         self.input_monitor = InputMonitor(
             InputCallbacks(
                 on_keypress=self.tracker.record_keypress,
@@ -326,6 +358,32 @@ class AsciiPalApp:
                 on_mouse_move=self.tracker.record_mouse_move,
             )
         )
+
+    def _build_pomodoro_lines(self, status: BreakStatus) -> list[str] | None:
+        if not self.config.pomodoro_mode:
+            return None
+        if status.stage == "on_break":
+            remaining = int(status.break_seconds_remaining)
+            mins, secs = divmod(remaining, 60)
+            return [f"\U0001f345 Break: {mins}:{secs:02d}"]
+        remaining = int(status.seconds_until_break)
+        mins, secs = divmod(remaining, 60)
+        return [f"\U0001f345 Work: {mins}:{secs:02d}"]
+
+    def _build_goal_line(self, totals, width: int) -> str:
+        goal = getattr(self.config, "session_goal_minutes", 0)
+        if goal <= 0:
+            return ""
+        elapsed_minutes = int(totals.total_active_seconds / 60)
+        if elapsed_minutes >= goal:
+            return "\U0001f3af GOAL MET!"
+        bar_w = min(10, width - 20)
+        if bar_w < 1:
+            bar_w = 1
+        filled = int(bar_w * elapsed_minutes / goal)
+        filled = max(0, min(filled, bar_w))
+        bar = "\u2588" * filled + "\u2591" * (bar_w - filled)
+        return f"\U0001f3af Goal: {elapsed_minutes}m/{goal}m [{bar}]"
 
     def run(self) -> None:
         if not self.demo:
@@ -382,6 +440,23 @@ class AsciiPalApp:
         sysinfo_lines: list[str] = []
         if self.config.system_resources_enabled:
             sysinfo_lines = self.system_resources.format_lines()
+            if getattr(self.config, 'cpu_load_enabled', True):
+                snap = self.system_resources.snapshot()
+                if snap is not None:
+                    sysinfo_lines.append(f"CPU Load: {snap.cpu_load:.1f}")
+                    if self.system_resources.is_system_saturated(
+                        getattr(self.config, 'sweating_load_threshold', 0.8)
+                    ):
+                        self.state_machine.set_sweating(True)
+                    else:
+                        self.state_machine.set_sweating(False)
+
+        # Battery info
+        if self.battery is not None and getattr(self.config, 'battery_enabled', True):
+            batt_line = self.battery.format_line()
+            if batt_line is not None:
+                sysinfo_lines.append(batt_line)
+
         # Aquarium scene: plants around character, progress bar below
         totals = self.tracker.totals(now=now)
         content_w = self._display_inner_w - 2
@@ -404,6 +479,31 @@ class AsciiPalApp:
         )
 
         achievement_line = self.achievements.update(totals, self.break_manager.breaks_taken)
+
+        # Daily streaks
+        session_seconds = totals.total_active_seconds
+        delta = session_seconds - self._last_session_seconds
+        self._last_session_seconds = session_seconds
+        self.achievements.update_use_streak(delta)
+        self.achievements.update_monthly_active(delta)
+        streak_line = self.achievements.streak_line()
+
+        # Session goals
+        goal_line = self._build_goal_line(totals, content_w)
+        if goal_line and "GOAL MET" in goal_line and not self._goal_met:
+            self._goal_met = True
+            self.state_machine.force_state("cheering")
+
+        # Pomodoro panel
+        pomodoro_lines = self._build_pomodoro_lines(break_status)
+
+        # Biome decorations
+        monthly_hours = self.achievements.current_monthly_hours()
+        stage = biome_stage(monthly_hours)
+        import random as _rng_mod
+        biome_rng = _rng_mod.Random(stage * 1000 + content_w)
+        biome_decs = build_biome_decorations(stage, content_w, content_h, self._anim_frame, biome_rng)
+
         if self.overlay is not None:
             colored = _compose_display(
                 art, above_lines, plant_lines,
@@ -413,6 +513,10 @@ class AsciiPalApp:
                 weather_panel_lines=weather_panel_lines,
                 sysinfo_lines=sysinfo_lines,
                 anim_frame=self._anim_frame,
+                pomodoro_panel_lines=pomodoro_lines,
+                goal_line=goal_line,
+                streak_line=streak_line,
+                biome_decorations=biome_decs,
             )
             self.overlay.update_colored(colored)
         else:

@@ -127,6 +127,27 @@ class TestCreatureSystem:
         system.update(_totals(), 3, 34, 10, frame=0)
         assert "snail" in system._unlocked
 
+    def test_cat_unlocks_at_2000_keypresses(self) -> None:
+        system = CreatureSystem(random.Random(42))
+        system.update(_totals(keypresses=1999), 0, 34, 10, frame=0)
+        assert "cat" not in system._unlocked
+        system.update(_totals(keypresses=2000), 0, 34, 10, frame=1)
+        assert "cat" in system._unlocked
+
+    def test_crab_unlocks_at_5000_seconds(self) -> None:
+        system = CreatureSystem(random.Random(42))
+        system.update(_totals(active_seconds=4999), 0, 34, 10, frame=0)
+        assert "crab" not in system._unlocked
+        system.update(_totals(active_seconds=5000), 0, 34, 10, frame=1)
+        assert "crab" in system._unlocked
+
+    def test_seahorse_unlocks_at_10_breaks(self) -> None:
+        system = CreatureSystem(random.Random(42))
+        system.update(_totals(), 9, 34, 10, frame=0)
+        assert "seahorse" not in system._unlocked
+        system.update(_totals(), 10, 34, 10, frame=1)
+        assert "seahorse" in system._unlocked
+
     def test_no_duplicate_unlocks(self) -> None:
         system = CreatureSystem(random.Random(42))
         totals = _totals(keypresses=500)

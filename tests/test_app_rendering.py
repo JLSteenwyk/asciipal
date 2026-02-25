@@ -133,3 +133,68 @@ def test_top_border_has_wave_pattern() -> None:
     )
     lines = display.text.split("\n")
     assert "≈" in lines[0]
+
+
+def test_pomodoro_panel_appears_when_provided() -> None:
+    display = _compose_display(
+        char_art="X",
+        above_lines=[],
+        plant_lines=[],
+        progress_line="",
+        status_line="",
+        achievement_line="",
+        inner_w=40,
+        pomodoro_panel_lines=["\U0001f345 Work: 12:34"],
+    )
+    assert "Pomodoro" in display.text
+    lines = display.text.split("\n")
+    pom_idx = next(i for i, l in enumerate(lines) if "Pomodoro" in l)
+    assert "pomodoro" in display.regions[pom_idx]
+
+
+def test_pomodoro_panel_absent_when_none() -> None:
+    display = _compose_display(
+        char_art="X",
+        above_lines=[],
+        plant_lines=[],
+        progress_line="",
+        status_line="",
+        achievement_line="",
+        inner_w=40,
+        pomodoro_panel_lines=None,
+    )
+    assert "Pomodoro" not in display.text
+
+
+def test_goal_line_renders_when_provided() -> None:
+    display = _compose_display(
+        char_art="X",
+        above_lines=[],
+        plant_lines=[],
+        progress_line="",
+        status_line="",
+        achievement_line="",
+        inner_w=40,
+        goal_line="\U0001f3af Goal: 10m/120m",
+    )
+    assert "Goal:" in display.text
+    lines = display.text.split("\n")
+    goal_idx = next(i for i, l in enumerate(lines) if "Goal:" in l)
+    assert "goal" in display.regions[goal_idx]
+
+
+def test_streak_line_renders_when_provided() -> None:
+    display = _compose_display(
+        char_art="X",
+        above_lines=[],
+        plant_lines=[],
+        progress_line="",
+        status_line="",
+        achievement_line="",
+        inner_w=40,
+        streak_line="\U0001f525 Streak: 7 days",
+    )
+    assert "Streak:" in display.text
+    lines = display.text.split("\n")
+    streak_idx = next(i for i, l in enumerate(lines) if "Streak:" in l)
+    assert "streak" in display.regions[streak_idx]

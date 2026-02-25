@@ -41,3 +41,26 @@ def test_config_validation_rejects_invalid_widget_opacity(tmp_path: Path) -> Non
     cfg.write_text("widget_opacity: 1.5\n", encoding="utf-8")
     with pytest.raises(ValueError):
         load_config(cfg)
+
+
+def test_session_goal_minutes_default_zero() -> None:
+    assert DEFAULT_CONFIG["session_goal_minutes"] == 0
+
+
+def test_config_validation_rejects_negative_session_goal(tmp_path: Path) -> None:
+    cfg = tmp_path / "config.yaml"
+    cfg.write_text("session_goal_minutes: -1\n", encoding="utf-8")
+    with pytest.raises(ValueError):
+        load_config(cfg)
+
+
+def test_battery_enabled_default_true() -> None:
+    assert DEFAULT_CONFIG["battery_enabled"] is True
+
+
+def test_cpu_load_enabled_default_true() -> None:
+    assert DEFAULT_CONFIG["cpu_load_enabled"] is True
+
+
+def test_sweating_load_threshold_default() -> None:
+    assert DEFAULT_CONFIG["sweating_load_threshold"] == 0.8

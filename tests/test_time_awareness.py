@@ -58,6 +58,26 @@ class TestWidthConsistency:
         assert len(set(widths)) == 1, f"{period} below frames have inconsistent widths: {widths}"
 
 
+class TestSkyCharacters:
+    def test_morning_has_sun_chars(self) -> None:
+        effect = TIME_PERIODS["morning"]
+        combined = " ".join(effect.above)
+        assert "☀" in combined
+        assert "○" in combined
+
+    def test_evening_has_half_moon(self) -> None:
+        effect = TIME_PERIODS["evening"]
+        combined = " ".join(effect.above)
+        assert "◐" in combined
+
+    def test_night_has_stars_and_crescent(self) -> None:
+        effect = TIME_PERIODS["night"]
+        combined = " ".join(effect.above)
+        assert "★" in combined
+        assert "✦" in combined
+        assert "☾" in combined
+
+
 class TestTimeAwarenessManager:
     def test_disabled_returns_none(self) -> None:
         config = _make_config(time_awareness_enabled=False)

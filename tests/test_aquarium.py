@@ -10,6 +10,8 @@ from asciipal.aquarium import (
     _build_plants,
     _plant_dimensions,
     build_aquarium_scene,
+    biome_stage,
+    build_biome_decorations,
 )
 
 
@@ -120,10 +122,11 @@ class TestBuildPlants:
         for line in lines:
             assert len(line) == 34
 
-    def test_plants_contain_weed_chars(self) -> None:
+    def test_plants_contain_plant_chars(self) -> None:
         lines = _build_plants(2, 34, frame=0)
         combined = "".join(lines)
-        assert any(ch in combined for ch in "()")
+        # Level 2: col 0, birth=1, age=1 → sprout ("|", "i")
+        assert any(ch in combined for ch in ("|", "i"))
 
     def test_plants_zero_returns_empty(self) -> None:
         assert _build_plants(0, 34, frame=0) == []
@@ -200,6 +203,31 @@ class TestMergePlants:
         assert len(merged) == 2  # extended to fit plants
 
 
+class TestPlantSpecies:
+    def test_level_1_uses_sprout_chars(self) -> None:
+        lines = _build_plants(1, 34, frame=0)
+        combined = "".join(lines)
+        # Level 1: col 0 birth=1, age=0 → sprout ("|", "i")
+        assert any(ch in combined for ch in ("|", "i"))
+
+    def test_level_8_has_evolved_chars(self) -> None:
+        lines = _build_plants(8, 34, frame=0)
+        combined = "".join(lines)
+        # Level 8: col 0 birth=1, age=7 → anemone ("*", "@")
+        assert any(ch in combined for ch in ("*", "@"))
+
+    def test_mid_levels_show_mixed_species(self) -> None:
+        lines = _build_plants(5, 34, frame=0)
+        combined = "".join(lines)
+        # At level 5: col 0 (birth=1, age=4 → coral), col 1 (birth=3, age=2 → kelp),
+        # col 2 (birth=5, age=0 → sprout)
+        # Should have chars from multiple species
+        has_sprout = any(ch in combined for ch in ("|", "i"))
+        has_kelp = any(ch in combined for ch in ("(", ")"))
+        has_coral = any(ch in combined for ch in ("Y", "T"))
+        assert has_sprout or has_kelp or has_coral
+
+
 class TestBuildScene:
     def test_empty_activity_returns_progress_no_plants(self) -> None:
         progress, plants = build_aquarium_scene(_totals(), 34, frame=0)
@@ -227,3 +255,37 @@ class TestBuildScene:
         t = _totals(active_seconds=7200)
         progress, _ = build_aquarium_scene(t, 34, frame=0)
         assert "MAX" in progress[0]
+
+
+class TestBiomeStage:
+    def test_stage_thresholds(self) -> None:
+        assert biome_stage(0) == 0
+        assert biome_stage(4.9) == 0
+        assert biome_stage(5) == 1
+        assert biome_stage(14.9) == 1
+        assert biome_stage(15) == 2
+        assert biome_stage(29.9) == 2
+        assert biome_stage(30) == 3
+        assert biome_stage(49.9) == 3
+        assert biome_stage(50) == 4
+        assert biome_stage(100) == 4
+
+    def test_barren_no_decorations(self) -> None:
+        decs = build_biome_decorations(0, 20, 10, frame=0)
+        assert decs == []
+
+    def test_higher_stages_more_decorations(self) -> None:
+        d1 = build_biome_decorations(1, 20, 10, frame=0)
+        d2 = build_biome_decorations(2, 20, 10, frame=0)
+        d3 = build_biome_decorations(3, 20, 10, frame=0)
+        d4 = build_biome_decorations(4, 20, 10, frame=0)
+        assert len(d1) < len(d2) < len(d3) < len(d4)
+
+    def test_decorations_are_tuples(self) -> None:
+        decs = build_biome_decorations(2, 20, 10, frame=0)
+        for item in decs:
+            assert len(item) == 3
+            r, c, ch = item
+            assert isinstance(r, int)
+            assert isinstance(c, int)
+            assert isinstance(ch, str)

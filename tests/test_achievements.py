@@ -183,6 +183,96 @@ class TestBreakStreakGap:
         assert manager._stats.break_streak == 2
 
 
+class TestUseStreak:
+    def test_consecutive_days(self, tmp_path: Path) -> None:
+        path = tmp_path / "stats.json"
+        seed = StatsData(
+            daily_active={
+                "2025-01-01": 400.0,
+                "2025-01-02": 500.0,
+                "2025-01-03": 300.0,
+            }
+        )
+        path.write_text(json.dumps(seed.to_dict()), encoding="utf-8")
+        manager = AchievementManager(stats_path=path)
+        manager.update_use_streak(0)
+        assert manager._stats.use_streak == 3
+
+    def test_gap_resets_streak(self, tmp_path: Path) -> None:
+        path = tmp_path / "stats.json"
+        seed = StatsData(
+            daily_active={
+                "2025-01-01": 400.0,
+                "2025-01-02": 400.0,
+                # gap on 2025-01-03
+                "2025-01-04": 400.0,
+                "2025-01-05": 400.0,
+            }
+        )
+        path.write_text(json.dumps(seed.to_dict()), encoding="utf-8")
+        manager = AchievementManager(stats_path=path)
+        manager.update_use_streak(0)
+        assert manager._stats.use_streak == 2
+
+    def test_below_threshold_skipped(self, tmp_path: Path) -> None:
+        path = tmp_path / "stats.json"
+        seed = StatsData(
+            daily_active={
+                "2025-01-01": 400.0,
+                "2025-01-02": 100.0,  # below 300s threshold
+                "2025-01-03": 400.0,
+            }
+        )
+        path.write_text(json.dumps(seed.to_dict()), encoding="utf-8")
+        manager = AchievementManager(stats_path=path)
+        manager.update_use_streak(0)
+        # Day 02 doesn't count, so streak from day 03 only
+        assert manager._stats.use_streak == 1
+
+    def test_streak_milestone_unlocks(self, tmp_path: Path) -> None:
+        path = tmp_path / "stats.json"
+        daily = {}
+        for i in range(1, 8):
+            daily[f"2025-01-{i:02d}"] = 400.0
+        seed = StatsData(daily_active=daily)
+        path.write_text(json.dumps(seed.to_dict()), encoding="utf-8")
+        manager = AchievementManager(stats_path=path)
+        manager.update_use_streak(0)
+        assert "use_streak_3" in manager._stats.unlocked
+        assert "use_streak_7" in manager._stats.unlocked
+
+    def test_streak_line_format(self, tmp_path: Path) -> None:
+        path = tmp_path / "stats.json"
+        seed = StatsData(use_streak=5)
+        path.write_text(json.dumps(seed.to_dict()), encoding="utf-8")
+        manager = AchievementManager(stats_path=path)
+        line = manager.streak_line()
+        assert "Streak:" in line
+        assert "5" in line
+
+
+class TestMonthlyActive:
+    def test_monthly_active_round_trip(self, tmp_path: Path) -> None:
+        path = tmp_path / "stats.json"
+        seed = StatsData(monthly_active={"2025-01": 3600.0})
+        path.write_text(json.dumps(seed.to_dict()), encoding="utf-8")
+        manager = AchievementManager(stats_path=path)
+        assert manager._stats.monthly_active["2025-01"] == 3600.0
+
+    def test_daily_active_round_trip(self, tmp_path: Path) -> None:
+        path = tmp_path / "stats.json"
+        original = StatsData(
+            daily_active={"2025-01-01": 500.0},
+            use_streak=3,
+            monthly_active={"2025-01": 7200.0},
+        )
+        path.write_text(json.dumps(original.to_dict()), encoding="utf-8")
+        manager = AchievementManager(stats_path=path)
+        assert manager._stats.daily_active == original.daily_active
+        assert manager._stats.use_streak == 3
+        assert manager._stats.monthly_active == original.monthly_active
+
+
 class TestFormatStatsReport:
     def test_contains_expected_labels(self, tmp_path: Path) -> None:
         path = tmp_path / "stats.json"

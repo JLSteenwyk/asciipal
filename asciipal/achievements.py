@@ -12,6 +12,7 @@ from asciipal.activity_tracker import ActivityTotals
 KEYPRESS_MILESTONES = [1_000, 5_000, 10_000, 50_000, 100_000]
 ACTIVE_HOUR_MILESTONES = [1, 5, 10, 50, 100]
 MOUSE_KM_MILESTONES = [10, 50, 100]
+USE_STREAK_MILESTONES = [3, 7, 14, 30, 60, 100]
 UNITS_PER_KM = 100_000
 
 DEFAULT_STATS_PATH = Path("~/.asciipal/stats.json").expanduser()
@@ -26,6 +27,9 @@ class StatsData:
     daily_breaks: dict[str, int] = field(default_factory=dict)
     break_streak: int = 0
     unlocked: list[str] = field(default_factory=list)
+    daily_active: dict[str, float] = field(default_factory=dict)
+    use_streak: int = 0
+    monthly_active: dict[str, float] = field(default_factory=dict)
 
     def to_dict(self) -> dict[str, Any]:
         return {
@@ -36,6 +40,9 @@ class StatsData:
             "daily_breaks": dict(self.daily_breaks),
             "break_streak": self.break_streak,
             "unlocked": list(self.unlocked),
+            "daily_active": dict(self.daily_active),
+            "use_streak": self.use_streak,
+            "monthly_active": dict(self.monthly_active),
         }
 
     @classmethod
@@ -48,6 +55,9 @@ class StatsData:
             daily_breaks=dict(data.get("daily_breaks", {})),
             break_streak=int(data.get("break_streak", 0)),
             unlocked=list(data.get("unlocked", [])),
+            daily_active={k: float(v) for k, v in data.get("daily_active", {}).items()},
+            use_streak=int(data.get("use_streak", 0)),
+            monthly_active={k: float(v) for k, v in data.get("monthly_active", {}).items()},
         )
 
 
@@ -111,6 +121,55 @@ class AchievementManager:
                 return f"★ Mouse Distance: {threshold}km! ★"
 
         return None
+
+    def update_use_streak(self, session_active_seconds: float) -> None:
+        """Track daily active time and calculate consecutive-day use streak."""
+        today = date.today().isoformat()
+        self._stats.daily_active[today] = self._stats.daily_active.get(today, 0.0) + session_active_seconds
+        # Calculate streak: consecutive days with >= 300s activity
+        sorted_dates = sorted(self._stats.daily_active.keys(), reverse=True)
+        streak = 0
+        prev = None
+        for iso_date in sorted_dates:
+            if self._stats.daily_active[iso_date] < 300:
+                if prev is None:
+                    continue
+                break
+            d = date.fromisoformat(iso_date)
+            if prev is None:
+                streak = 1
+                prev = d
+            else:
+                delta = (prev - d).days
+                if delta == 1:
+                    streak += 1
+                    prev = d
+                else:
+                    break
+        self._stats.use_streak = streak
+        # Check streak milestones
+        for threshold in USE_STREAK_MILESTONES:
+            aid = f"use_streak_{threshold}"
+            if aid not in self._stats.unlocked and streak >= threshold:
+                self._stats.unlocked.append(aid)
+                self._display_line = f"\u2605 Use Streak: {threshold} days! \u2605"
+                self._display_ticks_remaining = 12
+
+    def streak_line(self) -> str:
+        """Return streak display string, or empty if no streak."""
+        if self._stats.use_streak <= 0:
+            return ""
+        return f"\U0001f525 Streak: {self._stats.use_streak} days"
+
+    def update_monthly_active(self, session_seconds: float) -> None:
+        """Track monthly active time."""
+        key = date.today().strftime("%Y-%m")
+        self._stats.monthly_active[key] = self._stats.monthly_active.get(key, 0.0) + session_seconds
+
+    def current_monthly_hours(self) -> float:
+        """Return active hours for the current month."""
+        key = date.today().strftime("%Y-%m")
+        return self._stats.monthly_active.get(key, 0.0) / 3600.0
 
     def update_break_streak(self) -> None:
         sorted_dates = sorted(self._stats.daily_breaks.keys(), reverse=True)

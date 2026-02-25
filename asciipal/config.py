@@ -45,12 +45,17 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "dizzy": None,
         "alarmed": None,
         "cheering": None,
+        "sweating": None,
     },
     "weather_enabled": False,
     "weather_location": "",
     "weather_poll_minutes": 30,
     "time_awareness_enabled": False,
     "system_resources_enabled": True,
+    "session_goal_minutes": 0,
+    "battery_enabled": True,
+    "cpu_load_enabled": True,
+    "sweating_load_threshold": 0.8,
 }
 
 
@@ -80,6 +85,10 @@ class Config:
     weather_poll_minutes: int = 30
     time_awareness_enabled: bool = False
     system_resources_enabled: bool = True
+    session_goal_minutes: int = 0
+    battery_enabled: bool = True
+    cpu_load_enabled: bool = True
+    sweating_load_threshold: float = 0.8
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Config":
@@ -109,6 +118,10 @@ class Config:
             weather_poll_minutes=max(5, int(data["weather_poll_minutes"])),
             time_awareness_enabled=bool(data["time_awareness_enabled"]),
             system_resources_enabled=bool(data["system_resources_enabled"]),
+            session_goal_minutes=int(data["session_goal_minutes"]),
+            battery_enabled=bool(data["battery_enabled"]),
+            cpu_load_enabled=bool(data["cpu_load_enabled"]),
+            sweating_load_threshold=float(data["sweating_load_threshold"]),
         )
 
 
@@ -157,6 +170,10 @@ def validate_config(data: dict[str, Any]) -> None:
         raise ValueError(f"notifications must be one of {sorted(NOTIFICATION_LEVELS)}")
     if not isinstance(data["custom_art"], dict):
         raise ValueError("custom_art must be a mapping")
+    if int(data["session_goal_minutes"]) < 0:
+        raise ValueError("session_goal_minutes must be >= 0")
+    if float(data["sweating_load_threshold"]) <= 0:
+        raise ValueError("sweating_load_threshold must be > 0")
 
 
 def resolve_config_path() -> Path:

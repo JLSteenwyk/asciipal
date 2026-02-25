@@ -50,6 +50,34 @@ def test_dizzy_threshold_comes_from_config() -> None:
     assert result.state == "dizzy"
 
 
+def test_sweating_when_system_saturated() -> None:
+    machine = StateMachine(_config(), cooldown_seconds=0)
+    machine.set_sweating(True)
+    snap = ActivitySnapshot(
+        typing_wpm=0,
+        click_rate=0,
+        mouse_speed=0,
+        seconds_since_input=1,
+        total_active_seconds=10,
+    )
+    result = machine.update(snap, now=10)
+    assert result.state == "sweating"
+
+
+def test_sweating_off_does_not_trigger() -> None:
+    machine = StateMachine(_config(), cooldown_seconds=0)
+    machine.set_sweating(False)
+    snap = ActivitySnapshot(
+        typing_wpm=0,
+        click_rate=0,
+        mouse_speed=0,
+        seconds_since_input=1,
+        total_active_seconds=10,
+    )
+    result = machine.update(snap, now=10)
+    assert result.state != "sweating"
+
+
 def test_default_cooldown_from_config_is_applied() -> None:
     cfg_data = dict(DEFAULT_CONFIG)
     cfg_data["state_cooldown_seconds"] = 5.0

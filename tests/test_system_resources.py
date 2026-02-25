@@ -85,3 +85,16 @@ class TestSystemResourcesManager:
         assert len(lines) == 2
         assert "Disk:" in lines[0]
         assert "RAM:" in lines[1]
+
+    def test_snapshot_has_cpu_load(self) -> None:
+        mgr = SystemResourcesManager(poll_interval=0.0)
+        snap = mgr.snapshot()
+        assert hasattr(snap, "cpu_load")
+        assert isinstance(snap.cpu_load, float)
+
+    def test_is_system_saturated(self) -> None:
+        mgr = SystemResourcesManager(poll_interval=0.0)
+        snap = mgr.snapshot()
+        # Just test the method works without error
+        result = mgr.is_system_saturated(threshold=0.8)
+        assert isinstance(result, bool)

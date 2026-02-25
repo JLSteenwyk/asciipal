@@ -38,6 +38,24 @@ CREATURE_DEFS: tuple[CreatureDef, ...] = (
         left_sprites=("\\@",),
         min_breaks=3,
     ),
+    CreatureDef(
+        name="cat",
+        right_sprites=("=^.^=",),
+        left_sprites=("=^.^=",),
+        min_keypresses=2000,
+    ),
+    CreatureDef(
+        name="crab",
+        right_sprites=("V(;,;)V", "v(;,;)v"),
+        left_sprites=("V(;,;)V", "v(;,;)v"),
+        min_active_seconds=5000.0,
+    ),
+    CreatureDef(
+        name="seahorse",
+        right_sprites=("S~", "~S"),
+        left_sprites=("S~", "~S"),
+        min_breaks=10,
+    ),
 )
 
 

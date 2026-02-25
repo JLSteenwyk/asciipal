@@ -14,7 +14,7 @@ class TimeOfDayEffect:
 
 TIME_PERIODS: dict[str, TimeOfDayEffect] = {
     "morning": TimeOfDayEffect(
-        above=["~ o ~ o ~", "o ~ o ~ o"],
+        above=["☀ . ○ . ☀", "○ . ☀ . ○"],
         below=["", ""],
     ),
     "afternoon": TimeOfDayEffect(
@@ -22,11 +22,11 @@ TIME_PERIODS: dict[str, TimeOfDayEffect] = {
         below=["", ""],
     ),
     "evening": TimeOfDayEffect(
-        above=["C . C . C", ". C . C ."],
+        above=["◐ . ◐ . ◐", ". ◐ . ◐ ."],
         below=["~ . ~ . ~", ". ~ . ~ ."],
     ),
     "night": TimeOfDayEffect(
-        above=["+ . + . +", ". + . + ."],
+        above=["★ ✦ · ★  ☾", "✦ · ★ ✦  ☾"],
         below=["z z z z z", " z z z z "],
     ),
 }

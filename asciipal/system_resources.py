@@ -14,6 +14,7 @@ class ResourceSnapshot:
     disk_total_gb: float
     mem_used_gb: float
     mem_total_gb: float
+    cpu_load: float = 0.0
 
 
 def _get_disk_usage() -> tuple[float, float]:
@@ -103,6 +104,17 @@ def _get_memory_windows() -> tuple[float, float]:
     return used_gb, total_gb
 
 
+def _get_cpu_load() -> float:
+    """Return 1-minute load average normalized by CPU count, or 0.0 on Windows."""
+    try:
+        import os
+        load = os.getloadavg()[0]
+        cpus = os.cpu_count() or 1
+        return load / cpus
+    except (OSError, AttributeError):
+        return 0.0
+
+
 class SystemResourcesManager:
     def __init__(self, poll_interval: float = 30.0) -> None:
         self._poll_interval = poll_interval
@@ -123,16 +135,28 @@ class SystemResourcesManager:
             mem_used, mem_total = _get_memory_usage()
         except Exception:
             mem_used, mem_total = 0.0, 0.0
+        try:
+            cpu_load = _get_cpu_load()
+        except Exception:
+            cpu_load = 0.0
         snap = ResourceSnapshot(
             disk_used_gb=disk_used,
             disk_total_gb=disk_total,
             mem_used_gb=mem_used,
             mem_total_gb=mem_total,
+            cpu_load=cpu_load,
         )
         with self._lock:
             self._cached = snap
             self._last_poll = now
         return snap
+
+    def is_system_saturated(self, threshold: float = 0.8) -> bool:
+        """Return True if CPU load exceeds the given threshold."""
+        snap = self.snapshot()
+        if snap is None:
+            return False
+        return snap.cpu_load >= threshold
 
     def format_lines(self) -> list[str]:
         """Return disk and RAM usage as separate short strings."""
