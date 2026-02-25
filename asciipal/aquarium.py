@@ -55,22 +55,13 @@ def _plant_progress(totals: ActivityTotals) -> tuple[int, float]:
 
 
 def _build_progress_bar(level: int, progress: float, width: int) -> str:
-    """Render ``[▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱] 🌿 2/8`` fitted to exactly *width* chars.
-
-    At max level: ``[▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰] 🌿 MAX``
-    """
-    max_level = len(PLANT_THRESHOLDS)
-    if level >= max_level:
-        suffix = " 🌿 MAX"
-    else:
-        suffix = f" 🌿 {level}/{max_level}"
-    # bar_inner = width - len("[]") - len(suffix)
-    bar_inner = width - 2 - len(suffix)
+    """Render a full-width progress bar fitted to exactly *width* chars."""
+    bar_inner = width - 2  # account for [ and ]
     if bar_inner < 1:
         bar_inner = 1
     filled = int(bar_inner * progress)
     filled = max(0, min(filled, bar_inner))
-    bar = "[" + "▰" * filled + "▱" * (bar_inner - filled) + "]" + suffix
+    bar = "[" + "▰" * filled + "▱" * (bar_inner - filled) + "]"
     return bar[:width]
 
 

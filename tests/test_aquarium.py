@@ -81,19 +81,18 @@ class TestProgressBar:
     def test_empty_bar(self) -> None:
         bar = _build_progress_bar(0, 0.0, 30)
         assert bar.startswith("[")
-        assert "🌿 0/8" in bar
+        assert bar.endswith("]")
         assert len(bar) == 30
 
     def test_half_filled(self) -> None:
         bar = _build_progress_bar(1, 0.5, 30)
         assert "\u25b0" in bar
         assert "\u25b1" in bar
-        assert "🌿 1/8" in bar
         assert len(bar) == 30
 
     def test_max_level(self) -> None:
         bar = _build_progress_bar(8, 1.0, 30)
-        assert "MAX" in bar
+        assert all(c == "\u25b0" for c in bar[1:-1])
         assert len(bar) == 30
 
     def test_width_fitting(self) -> None:
@@ -103,7 +102,6 @@ class TestProgressBar:
 
     def test_full_bar_at_boundary(self) -> None:
         bar = _build_progress_bar(3, 1.0, 30)
-        assert "🌿 3/8" in bar
         inner_start = bar.index("[") + 1
         inner_end = bar.index("]")
         inner = bar[inner_start:inner_end]
@@ -253,7 +251,9 @@ class TestBuildScene:
     def test_progress_bar_shows_max_at_max_level(self) -> None:
         t = _totals(active_seconds=7200)
         progress, _ = build_aquarium_scene(t, 34, frame=0)
-        assert "MAX" in progress[0]
+        bar = progress[0]
+        inner = bar[1:-1]
+        assert all(c == "\u25b0" for c in inner)
 
 
 class TestBiomeStage:
