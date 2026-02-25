@@ -200,6 +200,21 @@ def _compose_display(
                     content_lines[row_idx] = line[:col] + ch + line[col + 1:]
                     content_regions[row_idx][col] = tag
 
+    # Fill remaining empty spaces with subtle water texture
+    # Alternating sparse patterns give an underwater shimmer effect
+    _water_fill_chars = ("~", "≈", "~", "∽")
+    for row_idx in range(1, len(content_lines)):  # skip row 0 (water surface)
+        line = content_lines[row_idx]
+        regions = content_regions[row_idx]
+        buf = list(line)
+        for col in range(len(buf)):
+            if buf[col] == " " and regions[col] == "default":
+                # Sparse fill: use a checkerboard-like pattern offset by frame
+                if (row_idx + col + anim_frame) % 7 == 0:
+                    buf[col] = _water_fill_chars[(row_idx + col) % len(_water_fill_chars)]
+                    regions[col] = "water"
+        content_lines[row_idx] = "".join(buf)
+
     # Build output parts and region rows (borderless)
     parts: list[str] = []
     all_regions: list[list[str]] = []

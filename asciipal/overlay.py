@@ -271,9 +271,13 @@ class Overlay:
         self.text_widget.configure(font=self.text_font)
 
         # Configure color tags
+        self._bold_font = font.Font(family=family, size=base_size, weight="bold")
         region_colors = _resolve_region_colors(config.color_scheme, fg, config.widget_mode)
         for tag, color in region_colors.items():
-            self.text_widget.tag_configure(tag, foreground=color)
+            if tag == "dino":
+                self.text_widget.tag_configure(tag, foreground=color, font=self._bold_font)
+            else:
+                self.text_widget.tag_configure(tag, foreground=color)
 
         self._configure_transparency()
         self.text_widget.pack(fill="both", expand=True)
@@ -344,6 +348,7 @@ class Overlay:
         step = 2 if delta > 0 else -2
         self._font_size = max(8, min(120, self._font_size + step))
         self.text_font.configure(size=self._font_size)
+        self._bold_font.configure(size=self._font_size)
 
     def set_min_width(self, width: int) -> None:
         self._min_text_width = max(self._min_text_width, width)
