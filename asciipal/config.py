@@ -15,7 +15,7 @@ POSITION_VALUES = {
     "center-left", "center", "center-right",
     "bottom-left", "bottom-center", "bottom-right",
 }
-COLOR_SCHEMES = {"default", "green-terminal", "pastel"}
+COLOR_SCHEMES = {"default", "green-terminal", "pastel", "amber-terminal", "ocean"}
 NOTIFICATION_LEVELS = {"gentle", "verbose", "silent"}
 
 DEFAULT_CONFIG: dict[str, Any] = {

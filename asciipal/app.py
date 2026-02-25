@@ -24,6 +24,18 @@ from asciipal.time_awareness import TimeAwarenessManager
 from asciipal.weather import WeatherManager
 
 
+def _wrap_in_frame(art: str) -> str:
+    lines = art.split("\n")
+    max_w = max((len(line) for line in lines), default=0)
+    padded = [line.ljust(max_w) for line in lines]
+    inner_w = max_w + 2
+    result = ["╔" + "═" * inner_w + "╗"]
+    for line in padded:
+        result.append(f"║ {line} ║")
+    result.append("╚" + "═" * inner_w + "╝")
+    return "\n".join(result)
+
+
 class AsciiPalApp:
     def __init__(
         self,
@@ -66,7 +78,7 @@ class AsciiPalApp:
                     on_quit=self._menu_quit,
                 )
                 self.overlay = Overlay(config, menu_callbacks=callbacks)
-                self.overlay.set_min_width(self.character.max_art_width)
+                self.overlay.set_min_width(self.character.max_art_width + 4)
             except Exception as exc:
                 self.headless = True
                 self.startup_notes.append(f"GUI overlay unavailable: {exc}. Falling back to headless mode.")
@@ -132,13 +144,14 @@ class AsciiPalApp:
                 art = f"{t_above:^{art_width}}\n{art}"
             if t_below:
                 art = f"{art}\n{t_below:^{art_width}}"
-        if break_line:
-            art = f"{art}\n{break_line}"
         totals = self.tracker.totals(now=now)
         achievement_line = self.achievements.update(totals, self.break_manager.breaks_taken)
-        if achievement_line:
-            art = f"{art}\n{achievement_line}"
         if self.overlay is not None:
+            art = _wrap_in_frame(art)
+            if break_line:
+                art = f"{art}\n{break_line}"
+            if achievement_line:
+                art = f"{art}\n{achievement_line}"
             self.overlay.update_text(art)
         else:
             line = f"State={state}"

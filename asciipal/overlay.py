@@ -22,6 +22,8 @@ COLOR_MAP: dict[str, tuple[str, str]] = {
     "default": ("#111111", "#f5f5f5"),
     "green-terminal": ("#7CFC00", "#001100"),
     "pastel": ("#2d3142", "#f4d6cc"),
+    "amber-terminal": ("#FFB000", "#1A0A00"),
+    "ocean": ("#00CED1", "#0A1628"),
 }
 
 # In widget mode the background is transparent/dark, so text must be light.
@@ -29,6 +31,8 @@ WIDGET_FG: dict[str, str] = {
     "default": "#FFFFFF",
     "green-terminal": "#7CFC00",
     "pastel": "#f4d6cc",
+    "amber-terminal": "#FFB000",
+    "ocean": "#00CED1",
 }
 
 
