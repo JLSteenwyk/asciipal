@@ -6,7 +6,7 @@ from asciipal.config import Config
 
 FRAME_SEPARATOR = "\n---\n"
 
-ALL_STATES = ("idle", "sleeping", "watching", "excited", "dizzy", "alarmed", "cheering", "sweating")
+ALL_STATES = ("idle", "sleeping", "watching", "excited", "dizzy", "alarmed", "cheering", "sweating", "eating")
 
 DEFAULT_ART = {
     "idle": "><_>",
@@ -17,6 +17,7 @@ DEFAULT_ART = {
     "alarmed": "><O>!",
     "cheering": "><^> °o°",
     "sweating": "><;> ~~",
+    "eating": "><~> nom",
 }
 
 

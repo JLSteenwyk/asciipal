@@ -56,6 +56,16 @@ def test_renderer_max_art_width() -> None:
                 assert len(line) <= renderer.max_art_width
 
 
+def test_renderer_eating_art_has_two_frames() -> None:
+    renderer = CharacterRenderer(_config())
+    assert renderer.frame_count("eating") == 2
+    frame0 = renderer.art_for("eating", frame=0)
+    frame1 = renderer.art_for("eating", frame=1)
+    assert frame0 != frame1
+    assert "/__.-" in frame0
+    assert "/__.-" in frame1
+
+
 def test_renderer_custom_art_override(tmp_path: Path) -> None:
     custom = tmp_path / "idle.txt"
     custom.write_text("(custom idle)", encoding="utf-8")

@@ -322,6 +322,8 @@ class AsciiPalApp:
         self._demo_time = monotonic()
         self._anim_frame = 0
         self._anim_tick_counter = 0
+        self._eating_ticks = 0
+        self._eating_cooldown = 20
         self.tracker = ActivityTracker()
         self.state_machine = StateMachine(config)
         self.break_manager = BreakManager(config)
@@ -467,6 +469,19 @@ class AsciiPalApp:
             totals, content_w, self._anim_frame,
         )
         progress_line = progress_lines[0] if progress_lines else ""
+
+        # Eating animation: dino leans down to munch on nearby plants
+        if self._eating_ticks > 0:
+            self._eating_ticks -= 1
+            state = "eating"
+            art = self.character.art_for(state, self._anim_frame)
+        elif state == "idle" and plant_lines and self._eating_cooldown <= 0:
+            self._eating_ticks = 8
+            self._eating_cooldown = 40
+            state = "eating"
+            art = self.character.art_for(state, self._anim_frame)
+        else:
+            self._eating_cooldown -= 1
 
         # Effects: bubbles, fireflies, companion creatures
         non_empty_above = [l for l in above_lines if l.strip()]
