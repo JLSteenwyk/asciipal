@@ -3,8 +3,6 @@ from __future__ import annotations
 import json
 from pathlib import Path
 
-import pytest
-
 from asciipal.achievements import AchievementManager, StatsData
 from asciipal.activity_tracker import ActivityTotals
 from asciipal.app import parse_args, run

@@ -94,7 +94,7 @@ class TestSystemResourcesManager:
 
     def test_is_system_saturated(self) -> None:
         mgr = SystemResourcesManager(poll_interval=0.0)
-        snap = mgr.snapshot()
+        mgr.snapshot()
         # Just test the method works without error
         result = mgr.is_system_saturated(threshold=0.8)
         assert isinstance(result, bool)

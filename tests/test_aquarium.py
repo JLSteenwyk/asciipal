@@ -3,7 +3,6 @@ from __future__ import annotations
 from asciipal.activity_tracker import ActivityTotals
 from asciipal.app import _merge_plants
 from asciipal.aquarium import (
-    PLANT_THRESHOLDS,
     _plant_level,
     _plant_progress,
     _build_progress_bar,

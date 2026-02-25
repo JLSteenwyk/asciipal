@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import random as _rng_mod
+
 from asciipal.activity_tracker import ActivityTotals
 
 PLANT_THRESHOLDS = [300, 600, 1200, 1800, 2700, 3600, 5400, 7200]
@@ -151,8 +153,6 @@ def build_aquarium_scene(
 
     return progress_lines, plant_lines
 
-
-import random as _rng_mod
 
 BIOME_DECORATIONS: dict[int, list[str]] = {
     0: [],

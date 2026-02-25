@@ -6,7 +6,7 @@ from unittest.mock import MagicMock
 from asciipal.break_manager import BreakManager
 from asciipal.config import Config, DEFAULT_CONFIG, _deep_merge
 from asciipal.overlay import MenuCallbacks
-from asciipal.weather import EFFECTS, WeatherManager
+from asciipal.weather import WeatherManager
 
 
 def _make_config(**overrides) -> Config:

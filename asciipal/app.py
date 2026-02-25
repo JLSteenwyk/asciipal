@@ -174,8 +174,6 @@ def _compose_display(
     merged_lines, merged_regions = _merge_plants_colored(char_art, plant_lines, content_w)
     for line, region_row in zip(merged_lines, merged_regions):
         centered = f"{line:^{content_w}}"
-        # If centering added padding, adjust region row to match
-        pad_left = len(centered) - len(centered.lstrip(" "))
         # Re-check: centered may already be content_w wide from _merge_plants_colored
         if len(region_row) < content_w:
             extra = content_w - len(region_row)
@@ -484,7 +482,7 @@ class AsciiPalApp:
             self._eating_cooldown -= 1
 
         # Effects: bubbles, fireflies, companion creatures
-        non_empty_above = [l for l in above_lines if l.strip()]
+        non_empty_above = [x for x in above_lines if x.strip()]
         char_lines = art.split("\n")
         content_h = len(non_empty_above) + max(len(char_lines), len(plant_lines))
         hour = datetime.now().hour

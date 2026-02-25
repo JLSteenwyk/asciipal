@@ -44,8 +44,8 @@ def test_weather_panel_renders_below_ground() -> None:
     assert "Weather" in text
     lines = text.split("\n")
     # Weather panel must appear after ground (sand row with ·. pattern)
-    ground_idx = max(i for i, l in enumerate(lines) if "·" in l and "." in l and "Weather" not in l)
-    weather_idx = next(i for i, l in enumerate(lines) if "Weather" in l)
+    ground_idx = max(i for i, ln in enumerate(lines) if "·" in ln and "." in ln and "Weather" not in ln)
+    weather_idx = next(i for i, ln in enumerate(lines) if "Weather" in ln)
     assert weather_idx > ground_idx
     # Check weather_panel region tag is used
     weather_row = display.regions[weather_idx]
@@ -82,7 +82,7 @@ def test_sysinfo_panel_renders_with_lines() -> None:
     assert "Disk:" in text
     assert "RAM:" in text
     lines = text.split("\n")
-    sysinfo_idx = next(i for i, l in enumerate(lines) if "System" in l)
+    sysinfo_idx = next(i for i, ln in enumerate(lines) if "System" in ln)
     sysinfo_row = display.regions[sysinfo_idx]
     assert "sysinfo" in sysinfo_row
 
@@ -114,7 +114,7 @@ def test_ground_uses_sand_tag() -> None:
     text = display.text
     lines = text.split("\n")
     # Find the single sand row by its ·. pattern (no box-drawing corners)
-    sand_idx = next(i for i, l in enumerate(lines) if "·" in l and "." in l and l.strip().replace("·", "").replace(".", "") == "")
+    sand_idx = next(i for i, ln in enumerate(lines) if "·" in ln and "." in ln and ln.strip().replace("·", "").replace(".", "") == "")
     assert all(t == "sand" for t in display.regions[sand_idx])
 
 
@@ -146,7 +146,7 @@ def test_pomodoro_panel_appears_when_provided() -> None:
     )
     assert "Pomodoro" in display.text
     lines = display.text.split("\n")
-    pom_idx = next(i for i, l in enumerate(lines) if "Pomodoro" in l)
+    pom_idx = next(i for i, ln in enumerate(lines) if "Pomodoro" in ln)
     assert "pomodoro" in display.regions[pom_idx]
 
 
@@ -177,7 +177,7 @@ def test_goal_line_renders_when_provided() -> None:
     )
     assert "goal:" in display.text
     lines = display.text.split("\n")
-    goal_idx = next(i for i, l in enumerate(lines) if "goal:" in l)
+    goal_idx = next(i for i, ln in enumerate(lines) if "goal:" in ln)
     assert "goal" in display.regions[goal_idx]
 
 
@@ -194,5 +194,5 @@ def test_streak_line_renders_when_provided() -> None:
     )
     assert "7 days" in display.text
     lines = display.text.split("\n")
-    streak_idx = next(i for i, l in enumerate(lines) if "7 days" in l)
+    streak_idx = next(i for i, ln in enumerate(lines) if "7 days" in ln)
     assert "streak" in display.regions[streak_idx]

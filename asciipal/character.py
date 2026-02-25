@@ -68,7 +68,7 @@ class CharacterRenderer:
         padded: list[str] = []
         for frame in raw:
             lines = frame.split("\n")
-            padded.append("\n".join(l.ljust(max_w) for l in lines))
+            padded.append("\n".join(ln.ljust(max_w) for ln in lines))
         return padded
 
     def _load_custom_frames(self, path: str, state: str) -> list[str]:

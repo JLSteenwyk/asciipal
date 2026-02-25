@@ -357,7 +357,7 @@ class Overlay:
     def update_text(self, text: str) -> None:
         """Backward-compatible plain-text update (no color tags)."""
         lines = text.split("\n")
-        max_w = max((len(l) for l in lines), default=0)
+        max_w = max((len(ln) for ln in lines), default=0)
         if max_w > self._min_text_width:
             self._min_text_width = max_w
             self.text_widget.configure(width=self._min_text_width)
@@ -375,7 +375,7 @@ class Overlay:
         regions = display.regions
 
         lines = text.split("\n")
-        max_w = max((len(l) for l in lines), default=0)
+        max_w = max((len(ln) for ln in lines), default=0)
         if max_w > self._min_text_width:
             self._min_text_width = max_w
             self.text_widget.configure(width=self._min_text_width)
