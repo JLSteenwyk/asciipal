@@ -151,12 +151,15 @@ def _compose_display(
     content_lines: list[str] = []
     content_regions: list[list[str]] = []
 
-    # Water surface row (animated)
-    if anim_frame % 2 == 0:
-        water_unit = ". · "
-    else:
-        water_unit = " · ."
-    water_surface = (water_unit * ((content_w + len(water_unit) - 1) // len(water_unit)))[:content_w]
+    # Water surface row — slow 4-phase drift for a calm, tranquil feel
+    _surface_phases = (
+        " · . · . · . ·",
+        "· . · . · . · .",
+        ". · . · . · . ·",
+        " . · . · . · . ",
+    )
+    phase = _surface_phases[anim_frame % len(_surface_phases)]
+    water_surface = (phase * ((content_w + len(phase) - 1) // len(phase)))[:content_w]
     content_lines.append(water_surface)
     content_regions.append(["water"] * content_w)
 
@@ -201,16 +204,16 @@ def _compose_display(
                     content_regions[row_idx][col] = tag
 
     # Fill remaining empty spaces with subtle water texture
-    # Alternating sparse patterns give an underwater shimmer effect
-    _water_fill_chars = ("~", "≈", "~", "∽")
+    # Gentle drift — shifts once every 2 frames for a calm underwater feel
+    _water_fill_chars = ("·", "∙", "·", "˙")
+    slow_frame = anim_frame // 2
     for row_idx in range(1, len(content_lines)):  # skip row 0 (water surface)
         line = content_lines[row_idx]
         regions = content_regions[row_idx]
         buf = list(line)
         for col in range(len(buf)):
             if buf[col] == " " and regions[col] == "default":
-                # Sparse fill: use a checkerboard-like pattern offset by frame
-                if (row_idx + col + anim_frame) % 7 == 0:
+                if (row_idx + col + slow_frame) % 7 == 0:
                     buf[col] = _water_fill_chars[(row_idx + col) % len(_water_fill_chars)]
                     regions[col] = "water"
         content_lines[row_idx] = "".join(buf)
