@@ -2,9 +2,10 @@ from __future__ import annotations
 
 from asciipal.activity_tracker import ActivityTotals
 from asciipal.aquarium import (
-    _bird_count,
+    PLANT_THRESHOLDS,
     _plant_level,
-    _scatter_birds,
+    _plant_progress,
+    _build_progress_bar,
     _build_plants,
     build_aquarium_scene,
 )
@@ -24,32 +25,6 @@ def _totals(
     )
 
 
-class TestBirdCount:
-    def test_zero_activity(self) -> None:
-        assert _bird_count(_totals()) == 0
-
-    def test_keypresses_add_birds(self) -> None:
-        assert _bird_count(_totals(keypresses=100)) == 1
-        assert _bird_count(_totals(keypresses=200)) == 2
-        assert _bird_count(_totals(keypresses=300)) == 3
-        # caps at 3 from keypresses alone
-        assert _bird_count(_totals(keypresses=1000)) == 3
-
-    def test_clicks_add_birds(self) -> None:
-        assert _bird_count(_totals(clicks=50)) == 1
-        assert _bird_count(_totals(clicks=150)) == 3
-        assert _bird_count(_totals(clicks=9999)) == 3
-
-    def test_mouse_adds_birds(self) -> None:
-        assert _bird_count(_totals(mouse_distance=10000)) == 1
-        assert _bird_count(_totals(mouse_distance=20000)) == 2
-        assert _bird_count(_totals(mouse_distance=999999)) == 2
-
-    def test_combined_caps_at_eight(self) -> None:
-        t = _totals(keypresses=1000, clicks=9999, mouse_distance=999999)
-        assert _bird_count(t) == 8
-
-
 class TestPlantLevel:
     def test_no_plants_early(self) -> None:
         assert _plant_level(_totals(active_seconds=30)) == 0
@@ -62,18 +37,73 @@ class TestPlantLevel:
         assert _plant_level(_totals(active_seconds=99999)) == 4
 
 
-class TestScatter:
-    def test_bird_line_has_correct_width(self) -> None:
-        line = _scatter_birds(3, 34, frame=0)
-        assert len(line) == 34
+class TestPlantProgress:
+    def test_zero_activity(self) -> None:
+        level, frac = _plant_progress(_totals(active_seconds=0))
+        assert level == 0
+        assert frac == 0.0
 
-    def test_bird_contains_sprites(self) -> None:
-        line = _scatter_birds(2, 34, frame=0)
-        assert "\\v/" in line or "/^\\" in line
+    def test_midway_level_zero(self) -> None:
+        level, frac = _plant_progress(_totals(active_seconds=30))
+        assert level == 0
+        assert frac == 0.5
 
-    def test_bird_zero_returns_empty(self) -> None:
-        assert _scatter_birds(0, 34, frame=0) == ""
+    def test_boundary_level_one(self) -> None:
+        level, frac = _plant_progress(_totals(active_seconds=60))
+        assert level == 1
+        assert frac == 0.0
 
+    def test_midway_level_one(self) -> None:
+        level, frac = _plant_progress(_totals(active_seconds=120))
+        assert level == 1
+        assert frac == 0.5
+
+    def test_boundary_max(self) -> None:
+        level, frac = _plant_progress(_totals(active_seconds=600))
+        assert level == 4
+        assert frac == 1.0
+
+    def test_beyond_max(self) -> None:
+        level, frac = _plant_progress(_totals(active_seconds=99999))
+        assert level == 4
+        assert frac == 1.0
+
+
+class TestProgressBar:
+    def test_empty_bar(self) -> None:
+        bar = _build_progress_bar(0, 0.0, 30)
+        assert bar.startswith("[")
+        assert "Plant 0/4" in bar
+        assert len(bar) == 30
+
+    def test_half_filled(self) -> None:
+        bar = _build_progress_bar(1, 0.5, 30)
+        assert "#" in bar
+        assert "-" in bar
+        assert "Plant 1/4" in bar
+        assert len(bar) == 30
+
+    def test_max_level(self) -> None:
+        bar = _build_progress_bar(4, 1.0, 30)
+        assert "MAX" in bar
+        assert "-" not in bar
+        assert len(bar) == 30
+
+    def test_width_fitting(self) -> None:
+        for w in [20, 30, 40, 50]:
+            bar = _build_progress_bar(2, 0.3, w)
+            assert len(bar) == w
+
+    def test_full_bar_at_boundary(self) -> None:
+        bar = _build_progress_bar(3, 1.0, 30)
+        assert "Plant 3/4" in bar
+        inner_start = bar.index("[") + 1
+        inner_end = bar.index("]")
+        inner = bar[inner_start:inner_end]
+        assert inner == "#" * len(inner)
+
+
+class TestBuildPlants:
     def test_plants_returns_list(self) -> None:
         lines = _build_plants(2, 34, frame=0)
         assert isinstance(lines, list)
@@ -99,36 +129,29 @@ class TestScatter:
 
 
 class TestBuildScene:
-    def test_empty_activity_returns_empty(self) -> None:
-        birds, plants = build_aquarium_scene(_totals(), 34, frame=0)
-        assert birds == []
+    def test_empty_activity_returns_progress_no_plants(self) -> None:
+        progress, plants = build_aquarium_scene(_totals(), 34, frame=0)
+        assert len(progress) == 1  # progress bar always shown
         assert plants == []
-
-    def test_active_session_produces_birds(self) -> None:
-        t = _totals(keypresses=300, clicks=100, active_seconds=300)
-        birds, plants = build_aquarium_scene(t, 34, frame=0)
-        assert len(birds) >= 1  # birds above
 
     def test_active_session_produces_plants(self) -> None:
         t = _totals(keypresses=300, clicks=100, active_seconds=300)
-        birds, plants = build_aquarium_scene(t, 34, frame=0)
-        assert len(plants) >= 1  # plants at ground level
+        progress, plants = build_aquarium_scene(t, 34, frame=0)
+        assert len(progress) == 1
+        assert len(plants) >= 1
 
-    def test_bird_lines_fit_content_width(self) -> None:
-        t = _totals(keypresses=500, clicks=200, mouse_distance=30000, active_seconds=700)
-        birds, plants = build_aquarium_scene(t, 34, frame=0)
-        for line in birds:
-            assert len(line) == 34
+    def test_progress_line_fits_content_width(self) -> None:
+        t = _totals(active_seconds=100)
+        progress, _ = build_aquarium_scene(t, 34, frame=0)
+        assert len(progress[0]) == 34
 
     def test_plant_lines_fit_content_width(self) -> None:
         t = _totals(keypresses=500, clicks=200, mouse_distance=30000, active_seconds=700)
-        birds, plants = build_aquarium_scene(t, 34, frame=0)
+        _, plants = build_aquarium_scene(t, 34, frame=0)
         for line in plants:
             assert len(line) == 34
 
-    def test_animation_varies_between_frames(self) -> None:
-        t = _totals(keypresses=300, clicks=100, active_seconds=300)
-        b0, _ = build_aquarium_scene(t, 34, frame=0)
-        b1, _ = build_aquarium_scene(t, 34, frame=1)
-        # Bird wing direction flips between frames
-        assert b0 != b1
+    def test_progress_bar_shows_max_at_max_level(self) -> None:
+        t = _totals(active_seconds=700)
+        progress, _ = build_aquarium_scene(t, 34, frame=0)
+        assert "MAX" in progress[0]

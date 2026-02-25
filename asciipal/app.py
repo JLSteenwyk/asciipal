@@ -41,8 +41,8 @@ def _compose_display(
 ) -> str:
     """Build the aquarium display with water surface and sandy ground.
 
-    Birds and weather go above the character. Plants sit at ground level
-    between the character and the ground border.
+    Progress bar and weather go above the character. Plants sit at ground
+    level between the character and the ground border.
     """
     top = f"╭{'~' * inner_w}╮"
     ground_top = f"╔{'═' * inner_w}╗"
@@ -181,13 +181,13 @@ class AsciiPalApp:
             above_lines.append(time_effect[0])
         if weather_effect is not None and weather_effect[0]:
             above_lines.append(weather_effect[0])
-        # Aquarium scene: birds fly above, plants grow at ground level
+        # Aquarium scene: progress bar above, plants at ground level
         totals = self.tracker.totals(now=now)
         content_w = self._display_inner_w - 2
-        bird_lines, plant_lines = build_aquarium_scene(
+        progress_lines, plant_lines = build_aquarium_scene(
             totals, content_w, self._anim_frame,
         )
-        above_lines.extend(bird_lines)
+        above_lines.extend(progress_lines)
 
         achievement_line = self.achievements.update(totals, self.break_manager.breaks_taken)
         if self.overlay is not None:

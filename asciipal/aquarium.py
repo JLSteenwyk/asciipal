@@ -2,47 +2,50 @@ from __future__ import annotations
 
 from asciipal.activity_tracker import ActivityTotals
 
-BIRD_DOWN = "\\v/"
-BIRD_UP = "/^\\"
-
-
-def _bird_count(totals: ActivityTotals) -> int:
-    """Determine how many birds should fly based on activity."""
-    n = 0
-    n += min(totals.total_keypresses // 100, 3)
-    n += min(totals.total_clicks // 50, 3)
-    n += min(int(totals.total_mouse_distance) // 10000, 2)
-    return min(n, 8)
+PLANT_THRESHOLDS = [60, 180, 300, 600]
 
 
 def _plant_level(totals: ActivityTotals) -> int:
     """Determine plant growth level (0-4) from active time."""
     secs = totals.total_active_seconds
-    if secs < 60:
-        return 0
-    if secs < 180:
-        return 1
-    if secs < 300:
-        return 2
-    if secs < 600:
-        return 3
-    return 4
+    for i, threshold in enumerate(PLANT_THRESHOLDS):
+        if secs < threshold:
+            return i
+    return len(PLANT_THRESHOLDS)
 
 
-def _scatter_birds(count: int, width: int, frame: int) -> str:
-    """Place birds at evenly-spaced positions. Wings flap each frame."""
-    if count <= 0 or width < 4:
-        return ""
-    buf = list(" " * width)
-    gap = width // (count + 1)
-    for i in range(count):
-        x = gap * (i + 1) + ((frame + i) % 3 - 1)
-        x = max(0, min(x, width - 3))
-        sprite = BIRD_DOWN if (i + frame) % 2 == 0 else BIRD_UP
-        for j, ch in enumerate(sprite):
-            if 0 <= x + j < width:
-                buf[x + j] = ch
-    return "".join(buf)
+def _plant_progress(totals: ActivityTotals) -> tuple[int, float]:
+    """Return (current_level, fraction_to_next).
+
+    At max level (4), fraction is 1.0.
+    """
+    secs = totals.total_active_seconds
+    level = _plant_level(totals)
+    if level >= len(PLANT_THRESHOLDS):
+        return level, 1.0
+    threshold = PLANT_THRESHOLDS[level]
+    prev = PLANT_THRESHOLDS[level - 1] if level > 0 else 0
+    return level, (secs - prev) / (threshold - prev)
+
+
+def _build_progress_bar(level: int, progress: float, width: int) -> str:
+    """Render ``[####--------] Plant 2/4`` fitted to exactly *width* chars.
+
+    At max level: ``[############] MAX``
+    """
+    max_level = len(PLANT_THRESHOLDS)
+    if level >= max_level:
+        suffix = " MAX"
+    else:
+        suffix = f" Plant {level}/{max_level}"
+    # bar_inner = width - len("[]") - len(suffix)
+    bar_inner = width - 2 - len(suffix)
+    if bar_inner < 1:
+        bar_inner = 1
+    filled = int(bar_inner * progress)
+    filled = max(0, min(filled, bar_inner))
+    bar = "[" + "#" * filled + "-" * (bar_inner - filled) + "]" + suffix
+    return bar[:width]
 
 
 def _build_plants(level: int, width: int, frame: int) -> list[str]:
@@ -66,22 +69,20 @@ def _build_plants(level: int, width: int, frame: int) -> list[str]:
 def build_aquarium_scene(
     totals: ActivityTotals, content_w: int, frame: int,
 ) -> tuple[list[str], list[str]]:
-    """Return (bird_lines, plant_lines) for aquarium decorations.
+    """Return (progress_lines, plant_lines) for aquarium decorations.
 
-    Birds fly above the character. Plants grow at ground level.
+    Progress bar shows how close the user is to the next plant.
+    Plants grow at ground level.
     """
-    bird_lines: list[str] = []
+    progress_lines: list[str] = []
     plant_lines: list[str] = []
 
-    birds = _bird_count(totals)
     level = _plant_level(totals)
-
-    if birds > 0:
-        line = _scatter_birds(birds, content_w, frame)
-        if line.strip():
-            bird_lines.append(line)
+    lvl, frac = _plant_progress(totals)
+    bar = _build_progress_bar(lvl, frac, content_w)
+    progress_lines.append(bar)
 
     if level > 0:
         plant_lines = _build_plants(level, content_w, frame)
 
-    return bird_lines, plant_lines
+    return progress_lines, plant_lines
