@@ -77,3 +77,11 @@ class TestSystemResourcesManager:
         assert snap is not None
         assert snap.mem_used_gb == 0.0
         assert snap.mem_total_gb == 0.0
+
+    def test_format_lines_returns_two_elements(self) -> None:
+        mgr = SystemResourcesManager(poll_interval=30.0)
+        lines = mgr.format_lines()
+        assert isinstance(lines, list)
+        assert len(lines) == 2
+        assert "Disk:" in lines[0]
+        assert "RAM:" in lines[1]

@@ -8,6 +8,7 @@ from asciipal.aquarium import (
     _plant_progress,
     _build_progress_bar,
     _build_plants,
+    _plant_dimensions,
     build_aquarium_scene,
 )
 
@@ -28,14 +29,18 @@ def _totals(
 
 class TestPlantLevel:
     def test_no_plants_early(self) -> None:
-        assert _plant_level(_totals(active_seconds=30)) == 0
+        assert _plant_level(_totals(active_seconds=100)) == 0
 
     def test_plant_thresholds(self) -> None:
-        assert _plant_level(_totals(active_seconds=60)) == 1
-        assert _plant_level(_totals(active_seconds=180)) == 2
-        assert _plant_level(_totals(active_seconds=300)) == 3
-        assert _plant_level(_totals(active_seconds=600)) == 4
-        assert _plant_level(_totals(active_seconds=99999)) == 4
+        assert _plant_level(_totals(active_seconds=300)) == 1
+        assert _plant_level(_totals(active_seconds=600)) == 2
+        assert _plant_level(_totals(active_seconds=1200)) == 3
+        assert _plant_level(_totals(active_seconds=1800)) == 4
+        assert _plant_level(_totals(active_seconds=2700)) == 5
+        assert _plant_level(_totals(active_seconds=3600)) == 6
+        assert _plant_level(_totals(active_seconds=5400)) == 7
+        assert _plant_level(_totals(active_seconds=7200)) == 8
+        assert _plant_level(_totals(active_seconds=99999)) == 8
 
 
 class TestPlantProgress:
@@ -45,28 +50,28 @@ class TestPlantProgress:
         assert frac == 0.0
 
     def test_midway_level_zero(self) -> None:
-        level, frac = _plant_progress(_totals(active_seconds=30))
+        level, frac = _plant_progress(_totals(active_seconds=150))
         assert level == 0
         assert frac == 0.5
 
     def test_boundary_level_one(self) -> None:
-        level, frac = _plant_progress(_totals(active_seconds=60))
+        level, frac = _plant_progress(_totals(active_seconds=300))
         assert level == 1
         assert frac == 0.0
 
     def test_midway_level_one(self) -> None:
-        level, frac = _plant_progress(_totals(active_seconds=120))
+        level, frac = _plant_progress(_totals(active_seconds=450))
         assert level == 1
         assert frac == 0.5
 
     def test_boundary_max(self) -> None:
-        level, frac = _plant_progress(_totals(active_seconds=600))
-        assert level == 4
+        level, frac = _plant_progress(_totals(active_seconds=7200))
+        assert level == 8
         assert frac == 1.0
 
     def test_beyond_max(self) -> None:
         level, frac = _plant_progress(_totals(active_seconds=99999))
-        assert level == 4
+        assert level == 8
         assert frac == 1.0
 
 
@@ -74,20 +79,19 @@ class TestProgressBar:
     def test_empty_bar(self) -> None:
         bar = _build_progress_bar(0, 0.0, 30)
         assert bar.startswith("[")
-        assert "Plant 0/4" in bar
+        assert "🌿 0/8" in bar
         assert len(bar) == 30
 
     def test_half_filled(self) -> None:
         bar = _build_progress_bar(1, 0.5, 30)
-        assert "#" in bar
-        assert "-" in bar
-        assert "Plant 1/4" in bar
+        assert "█" in bar
+        assert "░" in bar
+        assert "🌿 1/8" in bar
         assert len(bar) == 30
 
     def test_max_level(self) -> None:
-        bar = _build_progress_bar(4, 1.0, 30)
+        bar = _build_progress_bar(8, 1.0, 30)
         assert "MAX" in bar
-        assert "-" not in bar
         assert len(bar) == 30
 
     def test_width_fitting(self) -> None:
@@ -97,17 +101,18 @@ class TestProgressBar:
 
     def test_full_bar_at_boundary(self) -> None:
         bar = _build_progress_bar(3, 1.0, 30)
-        assert "Plant 3/4" in bar
+        assert "🌿 3/8" in bar
         inner_start = bar.index("[") + 1
         inner_end = bar.index("]")
         inner = bar[inner_start:inner_end]
-        assert inner == "#" * len(inner)
+        assert inner == "█" * len(inner)
 
 
 class TestBuildPlants:
     def test_plants_returns_list(self) -> None:
         lines = _build_plants(2, 34, frame=0)
         assert isinstance(lines, list)
+        # Level 2 = (1, 2) → height 2
         assert len(lines) == 2
 
     def test_plants_lines_have_correct_width(self) -> None:
@@ -123,10 +128,37 @@ class TestBuildPlants:
     def test_plants_zero_returns_empty(self) -> None:
         assert _build_plants(0, 34, frame=0) == []
 
-    def test_plants_height_matches_level(self) -> None:
-        for level in range(1, 5):
-            lines = _build_plants(level, 34, frame=0)
-            assert len(lines) == level
+    def test_staggered_dimensions(self) -> None:
+        # Level 1 = (1 col, 1 row)
+        lines = _build_plants(1, 34, frame=0)
+        assert len(lines) == 1
+
+        # Level 2 = (1 col, 2 rows)
+        lines = _build_plants(2, 34, frame=0)
+        assert len(lines) == 2
+
+        # Level 3 = (2 cols, 2 rows)
+        lines = _build_plants(3, 34, frame=0)
+        assert len(lines) == 2
+
+        # Level 4 = (2 cols, 3 rows)
+        lines = _build_plants(4, 34, frame=0)
+        assert len(lines) == 3
+
+        # Level 8 = (5 cols, 5 rows)
+        lines = _build_plants(8, 34, frame=0)
+        assert len(lines) == 5
+
+    def test_plant_dimensions_mapping(self) -> None:
+        assert _plant_dimensions(0) == (0, 0)
+        assert _plant_dimensions(1) == (1, 1)
+        assert _plant_dimensions(2) == (1, 2)
+        assert _plant_dimensions(3) == (2, 2)
+        assert _plant_dimensions(4) == (2, 3)
+        assert _plant_dimensions(5) == (3, 3)
+        assert _plant_dimensions(6) == (3, 4)
+        assert _plant_dimensions(7) == (4, 4)
+        assert _plant_dimensions(8) == (5, 5)
 
 
 class TestMergePlants:
@@ -186,12 +218,12 @@ class TestBuildScene:
         assert len(progress[0]) == 34
 
     def test_plant_lines_fit_content_width(self) -> None:
-        t = _totals(keypresses=500, clicks=200, mouse_distance=30000, active_seconds=700)
+        t = _totals(keypresses=500, clicks=200, mouse_distance=30000, active_seconds=7200)
         _, plants = build_aquarium_scene(t, 34, frame=0)
         for line in plants:
             assert len(line) == 34
 
     def test_progress_bar_shows_max_at_max_level(self) -> None:
-        t = _totals(active_seconds=700)
+        t = _totals(active_seconds=7200)
         progress, _ = build_aquarium_scene(t, 34, frame=0)
         assert "MAX" in progress[0]

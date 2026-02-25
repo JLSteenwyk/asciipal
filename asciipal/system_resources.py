@@ -134,12 +134,16 @@ class SystemResourcesManager:
             self._last_poll = now
         return snap
 
-    def format_line(self) -> str:
+    def format_lines(self) -> list[str]:
+        """Return disk and RAM usage as separate short strings."""
         snap = self.snapshot()
         if snap is None:
-            return ""
-        return (
-            f"Disk: {snap.disk_used_gb:.1f}/{snap.disk_total_gb:.1f} GB"
-            f"  |  "
-            f"RAM: {snap.mem_used_gb:.1f}/{snap.mem_total_gb:.1f} GB"
-        )
+            return []
+        return [
+            f"Disk: {snap.disk_used_gb:.1f}/{snap.disk_total_gb:.1f} GB",
+            f"RAM: {snap.mem_used_gb:.1f}/{snap.mem_total_gb:.1f} GB",
+        ]
+
+    def format_line(self) -> str:
+        lines = self.format_lines()
+        return "  |  ".join(lines)

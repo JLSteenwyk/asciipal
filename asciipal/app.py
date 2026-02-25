@@ -125,7 +125,8 @@ def _compose_display(
     inner_w: int,
     overlays: list[tuple[int, int, str, str]] | None = None,
     weather_panel_lines: list[str] | None = None,
-    sysinfo_line: str = "",
+    sysinfo_lines: list[str] | None = None,
+    anim_frame: int = 0,
 ) -> ColoredDisplay:
     """Build the aquarium display with water surface and sandy ground.
 
@@ -135,15 +136,30 @@ def _compose_display(
 
     Returns a ``ColoredDisplay`` with both the text and per-cell region tags.
     """
-    top = f"╭{'~' * inner_w}╮"
-    ground_top = f"╔{'═' * inner_w}╗"
-    ground_bot = f"╚{'═' * inner_w}╝"
+    # Top border: alternating ≈· pattern
+    wave_unit = "≈·"
+    wave_fill = (wave_unit * ((inner_w + 1) // 2))[:inner_w]
+    top = f"╭{wave_fill}╮"
+    # Sandy ground borders: alternating ░▒ pattern
+    sand_unit = "░▒"
+    sand_fill = (sand_unit * ((inner_w + 1) // 2))[:inner_w]
+    ground_top = f"╔{sand_fill}╗"
+    ground_bot = f"╚{sand_fill}╝"
     total_w = inner_w + 2
     content_w = inner_w - 2  # 1-char padding on each side
 
     # Build content lines and region grid, all exactly content_w wide
     content_lines: list[str] = []
     content_regions: list[list[str]] = []
+
+    # Water surface row (animated)
+    if anim_frame % 2 == 0:
+        water_unit = "~ · "
+    else:
+        water_unit = " · ~"
+    water_surface = (water_unit * ((content_w + len(water_unit) - 1) // len(water_unit)))[:content_w]
+    content_lines.append(water_surface)
+    content_regions.append(["water"] * content_w)
 
     for line in above_lines:
         if line.strip():
@@ -190,9 +206,9 @@ def _compose_display(
         all_regions.append(row_tags)
 
     parts.append(ground_top)
-    all_regions.append(["border"] * total_w)
+    all_regions.append(["sand"] * total_w)
     parts.append(ground_bot)
-    all_regions.append(["border"] * total_w)
+    all_regions.append(["sand"] * total_w)
 
     if progress_line:
         centered = f"{progress_line:^{total_w}}"
@@ -214,9 +230,10 @@ def _compose_display(
         )
 
     # Sub-panels below the aquarium
+    sysinfo_content = sysinfo_lines if sysinfo_lines else []
     for panel_tag, panel_title, panel_content_lines in [
         ("weather_panel", "Weather", weather_panel_lines or []),
-        ("sysinfo", "System", [sysinfo_line] if sysinfo_line else []),
+        ("sysinfo", "System", sysinfo_content),
     ]:
         if not panel_content_lines:
             continue
@@ -361,10 +378,10 @@ class AsciiPalApp:
             condition_name = self.weather.current_condition_name() or ""
             weather_panel_lines = [f"{weather_effect[0]}  {condition_name}"]
 
-        # Build system resources line
-        sysinfo_line = ""
+        # Build system resources lines
+        sysinfo_lines: list[str] = []
         if self.config.system_resources_enabled:
-            sysinfo_line = self.system_resources.format_line()
+            sysinfo_lines = self.system_resources.format_lines()
         # Aquarium scene: plants around character, progress bar below
         totals = self.tracker.totals(now=now)
         content_w = self._display_inner_w - 2
@@ -394,7 +411,8 @@ class AsciiPalApp:
                 self._display_inner_w,
                 overlays=overlays,
                 weather_panel_lines=weather_panel_lines,
-                sysinfo_line=sysinfo_line,
+                sysinfo_lines=sysinfo_lines,
+                anim_frame=self._anim_frame,
             )
             self.overlay.update_colored(colored)
         else:

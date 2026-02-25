@@ -66,7 +66,7 @@ def test_no_weather_panel_when_none() -> None:
     assert "Weather" not in display.text
 
 
-def test_sysinfo_panel_renders_with_tag() -> None:
+def test_sysinfo_panel_renders_with_lines() -> None:
     display = _compose_display(
         char_art="X",
         above_lines=[],
@@ -75,13 +75,61 @@ def test_sysinfo_panel_renders_with_tag() -> None:
         status_line="",
         achievement_line="",
         inner_w=40,
-        sysinfo_line="Disk: 100.0/500.0 GB  |  RAM: 8.0/16.0 GB",
+        sysinfo_lines=["Disk: 100.0/500.0 GB", "RAM: 8.0/16.0 GB"],
     )
     text = display.text
     assert "System" in text
     assert "Disk:" in text
+    assert "RAM:" in text
     lines = text.split("\n")
     sysinfo_idx = next(i for i, l in enumerate(lines) if "System" in l)
     sysinfo_row = display.regions[sysinfo_idx]
     assert "sysinfo" in sysinfo_row
 
+
+def test_water_surface_row_has_water_tag() -> None:
+    display = _compose_display(
+        char_art="X",
+        above_lines=[],
+        plant_lines=[],
+        progress_line="",
+        status_line="",
+        achievement_line="",
+        inner_w=30,
+    )
+    # The first content row (after top border) should have water tags
+    # Row 0 = top border, Row 1 = water surface
+    assert "water" in display.regions[1]
+
+
+def test_ground_uses_sand_tag() -> None:
+    display = _compose_display(
+        char_art="X",
+        above_lines=[],
+        plant_lines=[],
+        progress_line="",
+        status_line="",
+        achievement_line="",
+        inner_w=30,
+    )
+    text = display.text
+    lines = text.split("\n")
+    # Find ground lines (╔ and ╚)
+    ground_top_idx = next(i for i, l in enumerate(lines) if l.startswith("╔"))
+    ground_bot_idx = next(i for i, l in enumerate(lines) if l.startswith("╚"))
+    assert all(t == "sand" for t in display.regions[ground_top_idx])
+    assert all(t == "sand" for t in display.regions[ground_bot_idx])
+
+
+def test_top_border_has_wave_pattern() -> None:
+    display = _compose_display(
+        char_art="X",
+        above_lines=[],
+        plant_lines=[],
+        progress_line="",
+        status_line="",
+        achievement_line="",
+        inner_w=30,
+    )
+    lines = display.text.split("\n")
+    assert "≈" in lines[0]

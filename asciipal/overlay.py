@@ -56,6 +56,8 @@ _REGION_COLORS_RAW: dict[str, dict[str, str | None]] = {
         "achievement": "#FFA000",
         "weather_panel": "#90A4AE",
         "sysinfo": "#78909C",
+        "water": "#42A5F5",
+        "sand": "#A1887F",
         "default": None,
     },
     "green-terminal": {
@@ -73,6 +75,8 @@ _REGION_COLORS_RAW: dict[str, dict[str, str | None]] = {
         "achievement": "#FFD700",
         "weather_panel": "#66BB6A",
         "sysinfo": "#4CAF50",
+        "water": "#00BCD4",
+        "sand": "#8D6E63",
         "default": None,
     },
     "pastel": {
@@ -90,6 +94,8 @@ _REGION_COLORS_RAW: dict[str, dict[str, str | None]] = {
         "achievement": "#F4A261",
         "weather_panel": "#A0C4FF",
         "sysinfo": "#B8C0D0",
+        "water": "#89CFF0",
+        "sand": "#D7CCC8",
         "default": None,
     },
     "amber-terminal": {
@@ -107,6 +113,8 @@ _REGION_COLORS_RAW: dict[str, dict[str, str | None]] = {
         "achievement": "#FFE082",
         "weather_panel": "#FFD54F",
         "sysinfo": "#FFC107",
+        "water": "#FFECB3",
+        "sand": "#D2691E",
         "default": None,
     },
     "ocean": {
@@ -124,6 +132,8 @@ _REGION_COLORS_RAW: dict[str, dict[str, str | None]] = {
         "achievement": "#FFD54F",
         "weather_panel": "#4FC3F7",
         "sysinfo": "#26C6DA",
+        "water": "#4FC3F7",
+        "sand": "#8D6E63",
         "default": None,
     },
 }
@@ -145,6 +155,8 @@ _WIDGET_REGION_COLORS_RAW: dict[str, dict[str, str | None]] = {
         "achievement": "#FFB300",
         "weather_panel": "#B0BEC5",
         "sysinfo": "#90A4AE",
+        "water": "#64B5F6",
+        "sand": "#BCAAA4",
         "default": None,
     },
 }
@@ -152,7 +164,8 @@ _WIDGET_REGION_COLORS_RAW: dict[str, dict[str, str | None]] = {
 ALL_REGION_TAGS = (
     "dino", "plant", "border", "bubble", "firefly",
     "fish", "butterfly", "snail", "weather", "progress",
-    "status", "achievement", "weather_panel", "sysinfo", "default",
+    "status", "achievement", "weather_panel", "sysinfo",
+    "water", "sand", "default",
 )
 
 
