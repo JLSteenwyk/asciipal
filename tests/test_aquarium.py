@@ -207,25 +207,24 @@ class TestPlantSpecies:
     def test_level_1_uses_sprout_chars(self) -> None:
         lines = _build_plants(1, 34, frame=0)
         combined = "".join(lines)
-        # Level 1: col 0 birth=1, age=0 → sprout ("|", "i")
+        # Level 1: col 0 birth=1, age=0 → sprout
         assert any(ch in combined for ch in ("|", "i"))
 
-    def test_level_8_has_evolved_chars(self) -> None:
+    def test_level_8_has_flower_chars(self) -> None:
         lines = _build_plants(8, 34, frame=0)
         combined = "".join(lines)
-        # Level 8: col 0 birth=1, age=7 → anemone ("*", "@")
-        assert any(ch in combined for ch in ("*", "@"))
+        # Level 8: col 0 birth=1, age=7 → flower ("(@)", "\|/")
+        assert any(ch in combined for ch in ("@", "(", ")"))
 
     def test_mid_levels_show_mixed_species(self) -> None:
         lines = _build_plants(5, 34, frame=0)
         combined = "".join(lines)
-        # At level 5: col 0 (birth=1, age=4 → coral), col 1 (birth=3, age=2 → kelp),
+        # At level 5: col 0 (birth=1, age=4 → bloom), col 1 (birth=3, age=2 → bud),
         # col 2 (birth=5, age=0 → sprout)
-        # Should have chars from multiple species
         has_sprout = any(ch in combined for ch in ("|", "i"))
-        has_kelp = any(ch in combined for ch in ("(", ")"))
-        has_coral = any(ch in combined for ch in ("Y", "T"))
-        assert has_sprout or has_kelp or has_coral
+        has_bloom = any(ch in combined for ch in ("w", "\\", "/"))
+        has_bud = any(ch in combined for ch in (",", "~"))
+        assert has_sprout or has_bloom or has_bud
 
 
 class TestBuildScene:

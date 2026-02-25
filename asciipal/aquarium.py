@@ -6,11 +6,25 @@ PLANT_THRESHOLDS = [300, 600, 1200, 1800, 2700, 3600, 5400, 7200]
 #                   5m   10m  20m   30m   45m   60m   90m   120m
 
 # Per-column plant species based on maturity (current_level - birth_level)
-PLANT_CHARS: dict[str, tuple[str, str]] = {
-    "sprout":  ("|", "i"),    # age 0-1 levels since planted
-    "kelp":    ("(", ")"),    # age 2-3
-    "coral":   ("Y", "T"),    # age 4-5
-    "anemone": ("*", "@"),    # age 6+
+# Each species: (frame_0_rows, frame_1_rows)
+# Each row is exactly 3 chars wide, centered on column position
+PLANT_SPRITES: dict[str, tuple[list[str], list[str]]] = {
+    "sprout": (                          # age 0-1
+        [" i ", " | "],
+        [" i ", " | "],
+    ),
+    "bud": (                             # age 2-3
+        [" , ", "~| ", " | "],
+        [" . ", " |~", " | "],
+    ),
+    "bloom": (                           # age 4-5
+        ["\\w/", " |~", " | "],
+        ["\\w/", "~| ", " | "],
+    ),
+    "flower": (                          # age 6+
+        ["(@)", "\\|/", " |~", " | "],
+        ["(@)", "\\|/", "~| ", " | "],
+    ),
 }
 
 # The level at which each plant column first appears
@@ -88,37 +102,41 @@ def _plant_dimensions(level: int) -> tuple[int, int]:
     return mapping.get(level, (5, 5))
 
 
-def _plant_species_chars(col_index: int, current_level: int) -> tuple[str, str]:
-    """Return (char_a, char_b) for a plant column based on its maturity."""
+def _plant_species_name(col_index: int, current_level: int) -> str:
+    """Return species name for a plant column based on its maturity."""
     birth = PLANT_BIRTH_LEVELS[col_index] if col_index < len(PLANT_BIRTH_LEVELS) else 1
     age = max(current_level - birth, 0)
     if age <= 1:
-        return PLANT_CHARS["sprout"]
+        return "sprout"
     if age <= 3:
-        return PLANT_CHARS["kelp"]
+        return "bud"
     if age <= 5:
-        return PLANT_CHARS["coral"]
-    return PLANT_CHARS["anemone"]
+        return "bloom"
+    return "flower"
 
 
 def _build_plants(level: int, width: int, frame: int) -> list[str]:
-    """Build multi-line seaweed that sways with staggered growth."""
+    """Build multi-line flower sprites with staggered growth."""
     if level <= 0 or width < 4:
         return []
     num_cols, height = _plant_dimensions(level)
     positions = [2, width // 4, width // 2, 3 * width // 4, width - 3]
     num_cols = min(num_cols, len(positions))
-    lines: list[str] = []
-    for row in range(height):
-        buf = list(" " * width)
-        for i in range(num_cols):
-            pos = positions[i]
-            char_a, char_b = _plant_species_chars(i, level)
-            ch = char_a if (row + i + frame) % 2 == 0 else char_b
-            if 0 <= pos < width:
-                buf[pos] = ch
-        lines.append("".join(buf))
-    return lines
+    grid = [list(" " * width) for _ in range(height)]
+    for i in range(num_cols):
+        pos = positions[i]
+        species = _plant_species_name(i, level)
+        full_sprite = PLANT_SPRITES[species][frame % 2]
+        # Show top N rows (flower head first, stem revealed as height grows)
+        visible = full_sprite[:min(height, len(full_sprite))]
+        start_row = height - len(visible)
+        for r, sprite_row in enumerate(visible):
+            grid_row = start_row + r
+            for j, ch in enumerate(sprite_row):
+                col = pos - 1 + j
+                if 0 <= col < width and ch != " ":
+                    grid[grid_row][col] = ch
+    return ["".join(row) for row in grid]
 
 
 def build_aquarium_scene(
