@@ -2,9 +2,20 @@ from __future__ import annotations
 
 import platform
 import tkinter as tk
+from dataclasses import dataclass
 from tkinter import font
+from typing import Callable
 
 from asciipal.config import Config
+
+
+@dataclass
+class MenuCallbacks:
+    on_take_break: Callable[[], None]
+    on_skip_break: Callable[[], None]
+    on_toggle_weather: Callable[[], None]
+    on_open_config: Callable[[], None]
+    on_quit: Callable[[], None]
 
 
 COLOR_MAP: dict[str, tuple[str, str]] = {
@@ -22,8 +33,9 @@ WIDGET_FG: dict[str, str] = {
 
 
 class Overlay:
-    def __init__(self, config: Config) -> None:
+    def __init__(self, config: Config, menu_callbacks: MenuCallbacks | None = None) -> None:
         self.config = config
+        self._menu_callbacks = menu_callbacks
         self.root = tk.Tk()
         self.root.withdraw()  # Hide while we configure — avoids chrome flash
         self.root.title("AsciiPal")
@@ -73,6 +85,23 @@ class Overlay:
             widget.bind("<ButtonPress-1>", self._on_drag_start)
             widget.bind("<B1-Motion>", self._on_drag_motion)
             widget.bind("<Double-Button-1>", self._on_double_click)
+
+        # Context menu
+        self._menu: tk.Menu | None = None
+        if self._menu_callbacks is not None:
+            self._menu = tk.Menu(self.root, tearoff=0)
+            self._menu.add_command(label="Take a Break", command=self._menu_callbacks.on_take_break)
+            self._menu.add_command(label="Skip Break", command=self._menu_callbacks.on_skip_break)
+            self._menu.add_separator()
+            self._menu.add_command(label="Toggle Weather", command=self._menu_callbacks.on_toggle_weather)
+            self._menu.add_separator()
+            self._menu.add_command(label="Open Config", command=self._menu_callbacks.on_open_config)
+            self._menu.add_separator()
+            self._menu.add_command(label="Quit", command=self._menu_callbacks.on_quit)
+            for widget in (self.root, self.label):
+                widget.bind("<Button-3>", self._show_context_menu)
+                widget.bind("<Button-2>", self._show_context_menu)
+                widget.bind("<Control-Button-1>", self._show_context_menu)
 
         self.root.deiconify()  # Show now that everything is configured
         self.root.after(10, self._place_window)
@@ -175,6 +204,10 @@ class Overlay:
             if family in available:
                 return family
         return "Courier"
+
+    def _show_context_menu(self, event: tk.Event) -> None:
+        if self._menu is not None:
+            self._menu.tk_popup(event.x_root, event.y_root)
 
     def _transparent_bg_color(self) -> str:
         return "#1a1a2e"

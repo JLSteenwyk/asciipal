@@ -46,6 +46,10 @@ DEFAULT_CONFIG: dict[str, Any] = {
         "alarmed": None,
         "cheering": None,
     },
+    "weather_enabled": False,
+    "weather_location": "",
+    "weather_poll_minutes": 30,
+    "time_awareness_enabled": False,
 }
 
 
@@ -70,6 +74,10 @@ class Config:
     color_scheme: str
     notifications: str
     custom_art: dict[str, str | None] = field(default_factory=dict)
+    weather_enabled: bool = False
+    weather_location: str = ""
+    weather_poll_minutes: int = 30
+    time_awareness_enabled: bool = False
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Config":
@@ -94,6 +102,10 @@ class Config:
             color_scheme=str(data["color_scheme"]),
             notifications=str(data["notifications"]),
             custom_art=dict(data["custom_art"]),
+            weather_enabled=bool(data["weather_enabled"]),
+            weather_location=str(data["weather_location"]),
+            weather_poll_minutes=max(5, int(data["weather_poll_minutes"])),
+            time_awareness_enabled=bool(data["time_awareness_enabled"]),
         )
 
 

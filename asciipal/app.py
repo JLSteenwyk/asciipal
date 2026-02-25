@@ -1,22 +1,27 @@
 from __future__ import annotations
 
 import argparse
+import platform
+import subprocess
 from dataclasses import asdict
 import signal
 import sys
 from time import sleep
 from time import monotonic
 
+from asciipal.achievements import AchievementManager
 from asciipal.activity_tracker import ActivityTracker
 from asciipal.break_manager import BreakManager, BreakStatus
 from asciipal.character import CharacterRenderer
 import yaml
 
-from asciipal.config import Config, ensure_config_file, load_config
+from asciipal.config import Config, ensure_config_file, load_config, resolve_config_path
 from asciipal.input_monitor import InputCallbacks, InputMonitor
-from asciipal.overlay import Overlay
+from asciipal.overlay import MenuCallbacks, Overlay
 from asciipal.platform_support import runtime_summary, startup_warnings
 from asciipal.state_machine import StateMachine
+from asciipal.time_awareness import TimeAwarenessManager
+from asciipal.weather import WeatherManager
 
 
 class AsciiPalApp:
@@ -48,14 +53,24 @@ class AsciiPalApp:
         self.state_machine = StateMachine(config)
         self.break_manager = BreakManager(config)
         self.character = CharacterRenderer(config)
+        self.time_awareness = TimeAwarenessManager(config)
+        self.achievements = AchievementManager()
         self.overlay = None
         if not headless:
             try:
-                self.overlay = Overlay(config)
+                callbacks = MenuCallbacks(
+                    on_take_break=self._menu_take_break,
+                    on_skip_break=self._menu_skip_break,
+                    on_toggle_weather=self._menu_toggle_weather,
+                    on_open_config=self._menu_open_config,
+                    on_quit=self._menu_quit,
+                )
+                self.overlay = Overlay(config, menu_callbacks=callbacks)
                 self.overlay.set_min_width(self.character.max_art_width)
             except Exception as exc:
                 self.headless = True
                 self.startup_notes.append(f"GUI overlay unavailable: {exc}. Falling back to headless mode.")
+        self.weather = WeatherManager(config)
         self.input_monitor = InputMonitor(
             InputCallbacks(
                 on_keypress=self.tracker.record_keypress,
@@ -67,6 +82,7 @@ class AsciiPalApp:
     def run(self) -> None:
         if not self.demo:
             self.input_monitor.start()
+        self.weather.start()
         self._register_signal_handlers()
         if self.headless:
             tick_count = 0
@@ -100,8 +116,28 @@ class AsciiPalApp:
             self._anim_frame += 1
         state, break_line = self._render_status(transition.state, break_status)
         art = self.character.art_for(state, self._anim_frame)
+        effect = self.weather.current_effect(self._anim_frame)
+        if effect is not None:
+            art_width = max((len(line) for line in art.splitlines()), default=0)
+            above, below = effect
+            if above:
+                art = f"{above:^{art_width}}\n{art}"
+            if below:
+                art = f"{art}\n{below:^{art_width}}"
+        time_effect = self.time_awareness.current_effect(self._anim_frame)
+        if time_effect is not None:
+            art_width = max((len(line) for line in art.splitlines()), default=0)
+            t_above, t_below = time_effect
+            if t_above:
+                art = f"{t_above:^{art_width}}\n{art}"
+            if t_below:
+                art = f"{art}\n{t_below:^{art_width}}"
         if break_line:
             art = f"{art}\n{break_line}"
+        totals = self.tracker.totals(now=now)
+        achievement_line = self.achievements.update(totals, self.break_manager.breaks_taken)
+        if achievement_line:
+            art = f"{art}\n{achievement_line}"
         if self.overlay is not None:
             self.overlay.update_text(art)
         else:
@@ -177,6 +213,9 @@ class AsciiPalApp:
             return
         self._shutdown_done = True
         self._running = False
+        self.achievements.update_break_streak()
+        self.achievements.save()
+        self.weather.stop()
         self.input_monitor.stop()
         try:
             if self.overlay is not None:
@@ -184,6 +223,33 @@ class AsciiPalApp:
                 self.overlay.root.destroy()
         except Exception:
             pass
+
+    def _menu_take_break(self) -> None:
+        self.break_manager.force_break()
+
+    def _menu_skip_break(self) -> None:
+        self.break_manager.skip_break()
+
+    def _menu_toggle_weather(self) -> None:
+        self.config.weather_enabled = not self.config.weather_enabled
+        if self.config.weather_enabled:
+            self.weather.start()
+        else:
+            self.weather.stop()
+            self.weather.clear_effect()
+
+    def _menu_open_config(self) -> None:
+        config_path = str(resolve_config_path())
+        system = platform.system()
+        if system == "Darwin":
+            subprocess.Popen(["open", config_path])
+        elif system == "Windows":
+            subprocess.Popen(["notepad", config_path])
+        else:
+            subprocess.Popen(["xdg-open", config_path])
+
+    def _menu_quit(self) -> None:
+        self.shutdown()
 
     def _register_signal_handlers(self) -> None:
         def _handle(_sig, _frame) -> None:
@@ -244,6 +310,11 @@ def parse_args(argv: list[str]) -> argparse.Namespace:
         action="store_true",
         help="Disable session summary output at exit.",
     )
+    parser.add_argument(
+        "--stats",
+        action="store_true",
+        help="Print lifetime stats and achievements, then exit.",
+    )
     return parser.parse_args(argv)
 
 
@@ -256,6 +327,10 @@ def run(argv: list[str] | None = None) -> int:
     config = load_config(path=None if args.config is None else args.config)
     if args.print_config:
         print(yaml.safe_dump(asdict(config), sort_keys=False).strip())
+        return 0
+    if args.stats:
+        mgr = AchievementManager()
+        print(mgr.format_stats_report())
         return 0
     if args.print_state:
         tracker = ActivityTracker()

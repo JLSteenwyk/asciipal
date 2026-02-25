@@ -68,6 +68,15 @@ class BreakManager:
         self._on_break = True
         self._last_break_started = monotonic() if now is None else now
 
+    def force_break(self, now: float | None = None) -> None:
+        if not self._on_break:
+            self.start_break(now)
+
+    def skip_break(self, now: float | None = None) -> None:
+        ts = monotonic() if now is None else now
+        self._on_break = False
+        self._active_start = ts
+
     @property
     def _interval_seconds(self) -> float:
         if self.config.pomodoro_mode:
