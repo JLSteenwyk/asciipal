@@ -1,0 +1,43 @@
+from __future__ import annotations
+
+from pathlib import Path
+
+import pytest
+
+from asciipal.config import DEFAULT_CONFIG, ensure_config_file, load_config
+
+
+def test_ensure_config_file_creates_default(tmp_path: Path) -> None:
+    cfg = tmp_path / "config.yaml"
+    ensure_config_file(cfg)
+    assert cfg.exists()
+    loaded = load_config(cfg)
+    assert loaded.break_interval_minutes == DEFAULT_CONFIG["break_interval_minutes"]
+
+
+def test_config_validation_rejects_invalid_sleep_timeout(tmp_path: Path) -> None:
+    cfg = tmp_path / "config.yaml"
+    cfg.write_text("idle_timeout_seconds: 60\nsleep_timeout_seconds: 30\n", encoding="utf-8")
+    with pytest.raises(ValueError):
+        load_config(cfg)
+
+
+def test_config_validation_rejects_negative_state_cooldown(tmp_path: Path) -> None:
+    cfg = tmp_path / "config.yaml"
+    cfg.write_text("state_cooldown_seconds: -1\n", encoding="utf-8")
+    with pytest.raises(ValueError):
+        load_config(cfg)
+
+
+def test_config_validation_rejects_invalid_pomodoro_values(tmp_path: Path) -> None:
+    cfg = tmp_path / "config.yaml"
+    cfg.write_text("pomodoro_work_minutes: 0\n", encoding="utf-8")
+    with pytest.raises(ValueError):
+        load_config(cfg)
+
+
+def test_config_validation_rejects_invalid_widget_opacity(tmp_path: Path) -> None:
+    cfg = tmp_path / "config.yaml"
+    cfg.write_text("widget_opacity: 1.5\n", encoding="utf-8")
+    with pytest.raises(ValueError):
+        load_config(cfg)
