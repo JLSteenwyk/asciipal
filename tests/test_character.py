@@ -13,8 +13,8 @@ def _config() -> Config:
 def test_renderer_loads_bundled_art() -> None:
     renderer = CharacterRenderer(_config())
     art = renderer.art_for("idle")
-    assert "•" in art
-    assert "‿" in art
+    assert "/ _)" in art
+    assert "/__.-" in art
 
 
 def test_renderer_returns_animation_frames() -> None:
@@ -22,8 +22,8 @@ def test_renderer_returns_animation_frames() -> None:
     frame0 = renderer.art_for("idle", frame=0)
     frame1 = renderer.art_for("idle", frame=1)
     assert frame0 != frame1
-    assert "•‿•" in frame0
-    assert "•‿•" in frame1
+    assert "/ _)" in frame0
+    assert "/ _)" in frame1
 
 
 def test_renderer_frame_wraps() -> None:

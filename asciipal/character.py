@@ -9,13 +9,13 @@ FRAME_SEPARATOR = "\n---\n"
 ALL_STATES = ("idle", "sleeping", "watching", "excited", "dizzy", "alarmed", "cheering")
 
 DEFAULT_ART = {
-    "idle": "(•‿•)",
-    "sleeping": "(-‿-) zzZ",
-    "watching": "(°‿°)",
-    "excited": "\\(★‿★)/",
-    "dizzy": "(@‿@)~",
-    "alarmed": "(╯°□°)╯",
-    "cheering": "\\(°▽°)/",
+    "idle": "><_>",
+    "sleeping": "><-> zzZ",
+    "watching": "><°>",
+    "excited": "><^> °°",
+    "dizzy": "><@> ~",
+    "alarmed": "><O>!",
+    "cheering": "><^> °o°",
 }
 
 

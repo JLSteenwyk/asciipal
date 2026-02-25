@@ -11,6 +11,7 @@ from time import monotonic
 
 from asciipal.achievements import AchievementManager
 from asciipal.activity_tracker import ActivityTracker
+from asciipal.aquarium import build_aquarium_scene
 from asciipal.break_manager import BreakManager, BreakStatus
 from asciipal.character import CharacterRenderer
 import yaml
@@ -24,16 +25,56 @@ from asciipal.time_awareness import TimeAwarenessManager
 from asciipal.weather import WeatherManager
 
 
-def _wrap_in_frame(art: str) -> str:
-    lines = art.split("\n")
-    max_w = max((len(line) for line in lines), default=0)
-    padded = [line.ljust(max_w) for line in lines]
-    inner_w = max_w + 2
-    result = ["╔" + "═" * inner_w + "╗"]
-    for line in padded:
-        result.append(f"║ {line} ║")
-    result.append("╚" + "═" * inner_w + "╝")
-    return "\n".join(result)
+def _make_wave(length: int) -> str:
+    """Generate a ``~.`` wave pattern of exactly *length* characters."""
+    unit = "~."
+    return (unit * ((length + 1) // 2))[:length]
+
+
+def _compose_display(
+    char_art: str,
+    above_lines: list[str],
+    plant_lines: list[str],
+    status_line: str,
+    achievement_line: str,
+    inner_w: int,
+) -> str:
+    """Build the aquarium display with water surface and sandy ground.
+
+    Birds and weather go above the character. Plants sit at ground level
+    between the character and the ground border.
+    """
+    top = f"╭{'~' * inner_w}╮"
+    ground_top = f"╔{'═' * inner_w}╗"
+    ground_bot = f"╚{'═' * inner_w}╝"
+    total_w = inner_w + 2
+    content_w = inner_w - 2  # 1-char padding on each side
+
+    def row(text: str) -> str:
+        return f"│ {text:^{content_w}} │"
+
+    parts: list[str] = [top]
+
+    for line in above_lines:
+        if line.strip():
+            parts.append(row(line))
+
+    for line in char_art.split("\n"):
+        parts.append(row(line))
+
+    for line in plant_lines:
+        if line.strip():
+            parts.append(row(line))
+
+    parts.append(ground_top)
+    parts.append(ground_bot)
+
+    if status_line:
+        parts.append(f"{status_line:^{total_w}}")
+    if achievement_line:
+        parts.append(f"{achievement_line:^{total_w}}")
+
+    return "\n".join(parts)
 
 
 class AsciiPalApp:
@@ -67,6 +108,9 @@ class AsciiPalApp:
         self.character = CharacterRenderer(config)
         self.time_awareness = TimeAwarenessManager(config)
         self.achievements = AchievementManager()
+        # Fixed inner width for the aquarium (must be even for wave pattern).
+        raw_inner = max(self.character.max_art_width + 16, 36)
+        self._display_inner_w = raw_inner + (raw_inner % 2)
         self.overlay = None
         if not headless:
             try:
@@ -78,7 +122,7 @@ class AsciiPalApp:
                     on_quit=self._menu_quit,
                 )
                 self.overlay = Overlay(config, menu_callbacks=callbacks)
-                self.overlay.set_min_width(self.character.max_art_width + 4)
+                self.overlay.set_min_width(self._display_inner_w + 2)
             except Exception as exc:
                 self.headless = True
                 self.startup_notes.append(f"GUI overlay unavailable: {exc}. Falling back to headless mode.")
@@ -128,31 +172,31 @@ class AsciiPalApp:
             self._anim_frame += 1
         state, break_line = self._render_status(transition.state, break_status)
         art = self.character.art_for(state, self._anim_frame)
-        effect = self.weather.current_effect(self._anim_frame)
-        if effect is not None:
-            art_width = max((len(line) for line in art.splitlines()), default=0)
-            above, below = effect
-            if above:
-                art = f"{above:^{art_width}}\n{art}"
-            if below:
-                art = f"{art}\n{below:^{art_width}}"
+
+        # Collect decoration lines — everything goes above the character
+        above_lines: list[str] = []
         time_effect = self.time_awareness.current_effect(self._anim_frame)
-        if time_effect is not None:
-            art_width = max((len(line) for line in art.splitlines()), default=0)
-            t_above, t_below = time_effect
-            if t_above:
-                art = f"{t_above:^{art_width}}\n{art}"
-            if t_below:
-                art = f"{art}\n{t_below:^{art_width}}"
+        weather_effect = self.weather.current_effect(self._anim_frame)
+        if time_effect is not None and time_effect[0]:
+            above_lines.append(time_effect[0])
+        if weather_effect is not None and weather_effect[0]:
+            above_lines.append(weather_effect[0])
+        # Aquarium scene: birds fly above, plants grow at ground level
         totals = self.tracker.totals(now=now)
+        content_w = self._display_inner_w - 2
+        bird_lines, plant_lines = build_aquarium_scene(
+            totals, content_w, self._anim_frame,
+        )
+        above_lines.extend(bird_lines)
+
         achievement_line = self.achievements.update(totals, self.break_manager.breaks_taken)
         if self.overlay is not None:
-            art = _wrap_in_frame(art)
-            if break_line:
-                art = f"{art}\n{break_line}"
-            if achievement_line:
-                art = f"{art}\n{achievement_line}"
-            self.overlay.update_text(art)
+            display = _compose_display(
+                art, above_lines, plant_lines,
+                break_line, achievement_line or "",
+                self._display_inner_w,
+            )
+            self.overlay.update_text(display)
         else:
             line = f"State={state}"
             if break_line:
