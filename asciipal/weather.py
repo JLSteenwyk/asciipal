@@ -23,36 +23,36 @@ class WeatherEffect:
 
 EFFECTS: dict[str, WeatherEffect] = {
     "clear": WeatherEffect(
-        above=["✦  *  ✦  *  ✦", "*  ✦  *  ✦  *"],
+        above=["✦ * ✦ * ✦", "* ✦ * ✦ *"],
         below=["", ""],
     ),
     "cloudy": WeatherEffect(
-        above=["☁  ░  ☁  ░  ☁", "░  ☁  ░  ☁  ░"],
+        above=["☁ ░ ☁ ░ ☁", "░ ☁ ░ ☁ ░"],
         below=["", ""],
     ),
     "rain": WeatherEffect(
-        above=["░  ╽  ░  ╽  ░", "╽  ░  ╽  ░  ╽"],
-        below=["╿  ░  ╿  ░  ╿", "░  ╿  ░  ╿  ░"],
+        above=["░ ╽ ░ ╽ ░", "╽ ░ ╽ ░ ╽"],
+        below=["╿ ░ ╿ ░ ╿", "░ ╿ ░ ╿ ░"],
     ),
     "heavy_rain": WeatherEffect(
-        above=["╽╽ ╽╽ ╽╽ ╽╽ ", "╽╽╽╽ ╽╽╽╽ ╽╽"],
-        below=["╿╿ ╿╿ ╿╿ ╿╿ ", "╿╿╿╿ ╿╿╿╿ ╿╿"],
+        above=["╽╽ ╽╽ ╽╽╽", "╽╽╽ ╽╽ ╽╽"],
+        below=["╿╿ ╿╿ ╿╿╿", "╿╿╿ ╿╿ ╿╿"],
     ),
     "snow": WeatherEffect(
-        above=["❄  *  ❄  *  ❄", "*  ❄  *  ❄  *"],
-        below=["*  ❄  *  ❄  *", "❄  *  ❄  *  ❄"],
+        above=["❄ * ❄ * ❄", "* ❄ * ❄ *"],
+        below=["* ❄ * ❄ *", "❄ * ❄ * ❄"],
     ),
     "thunder": WeatherEffect(
-        above=["⚡ ╽╽ ⚡ ╽╽ ⚡ ", "╽╽ ⚡ ╽╽ ⚡ ╽╽"],
-        below=["╿╿ ⚡ ╿╿ ⚡ ╿╿", " ⚡ ╿╿ ⚡ ╿╿ ⚡"],
+        above=["⚡ ╽ ⚡ ╽ ⚡", "╽ ⚡ ╽ ⚡ ╽"],
+        below=["╿ ⚡ ╿ ⚡ ╿", "⚡ ╿ ⚡ ╿ ⚡"],
     ),
     "fog": WeatherEffect(
-        above=["░░░░░░░░░░░░░", "▒▒▒▒▒▒▒▒▒▒▒▒▒"],
-        below=["▒▒▒▒▒▒▒▒▒▒▒▒▒", "░░░░░░░░░░░░░"],
+        above=["░░░░░░░░░", "▒▒▒▒▒▒▒▒▒"],
+        below=["▒▒▒▒▒▒▒▒▒", "░░░░░░░░░"],
     ),
     "sleet": WeatherEffect(
-        above=["╽  ❄  ╽  ❄  ╽", "❄  ╽  ❄  ╽  ❄"],
-        below=["╿  *  ╿  *  ╿", "*  ╿  *  ╿  *"],
+        above=["╽ ❄ ╽ ❄ ╽", "❄ ╽ ❄ ╽ ❄"],
+        below=["╿ * ╿ * ╿", "* ╿ * ╿ *"],
     ),
 }
 
