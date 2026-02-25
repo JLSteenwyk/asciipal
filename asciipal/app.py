@@ -141,17 +141,11 @@ def _compose_display(
 
     Returns a ``ColoredDisplay`` with both the text and per-cell region tags.
     """
-    # Top border: gentle ripple pattern
-    wave_unit = "·˙"
-    wave_fill = (wave_unit * ((inner_w + 1) // 2))[:inner_w]
-    top = f"╭{wave_fill}╮"
-    # Sandy ground borders: soft dot pattern
+    # Sandy ground: soft dot pattern (borderless)
     sand_unit = "·."
     sand_fill = (sand_unit * ((inner_w + 1) // 2))[:inner_w]
-    ground_top = f"╔{sand_fill}╗"
-    ground_bot = f"╚{sand_fill}╝"
-    total_w = inner_w + 2
-    content_w = inner_w - 2  # 1-char padding on each side
+    total_w = inner_w
+    content_w = inner_w
 
     # Build content lines and region grid, all exactly content_w wide
     content_lines: list[str] = []
@@ -206,22 +200,15 @@ def _compose_display(
                     content_lines[row_idx] = line[:col] + ch + line[col + 1:]
                     content_regions[row_idx][col] = tag
 
-    # Frame with borders — build output parts and region rows
-    parts: list[str] = [top]
-    all_regions: list[list[str]] = [["border"] * total_w]
+    # Build output parts and region rows (borderless)
+    parts: list[str] = []
+    all_regions: list[list[str]] = []
 
     for i, line in enumerate(content_lines):
-        parts.append(f"│ {line} │")
-        row_tags = (
-            ["border"] + ["default"]  # │ and space
-            + content_regions[i]
-            + ["default"] + ["border"]  # space and │
-        )
-        all_regions.append(row_tags)
+        parts.append(line)
+        all_regions.append(content_regions[i])
 
-    parts.append(ground_top)
-    all_regions.append(["sand"] * total_w)
-    parts.append(ground_bot)
+    parts.append(sand_fill)
     all_regions.append(["sand"] * total_w)
 
     if progress_line:
@@ -340,7 +327,7 @@ class AsciiPalApp:
                     on_quit=self._menu_quit,
                 )
                 self.overlay = Overlay(config, menu_callbacks=callbacks)
-                self.overlay.set_min_width(self._display_inner_w + 2)
+                self.overlay.set_min_width(self._display_inner_w)
             except Exception as exc:
                 self.headless = True
                 self.startup_notes.append(f"GUI overlay unavailable: {exc}. Falling back to headless mode.")
@@ -459,7 +446,7 @@ class AsciiPalApp:
 
         # Aquarium scene: plants around character, progress bar below
         totals = self.tracker.totals(now=now)
-        content_w = self._display_inner_w - 2
+        content_w = self._display_inner_w
         progress_lines, plant_lines = build_aquarium_scene(
             totals, content_w, self._anim_frame,
         )

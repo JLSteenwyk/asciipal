@@ -265,6 +265,7 @@ class Overlay:
             cursor="fleur",
         )
         base_size = max(int(64 * config.character_scale), 10)
+        self._font_size = base_size
         family = self._pick_font_family()
         self.text_font = font.Font(family=family, size=base_size)
         self.text_widget.configure(font=self.text_font)
@@ -288,6 +289,11 @@ class Overlay:
             widget.bind("<ButtonPress-1>", self._on_drag_start)
             widget.bind("<B1-Motion>", self._on_drag_motion)
             widget.bind("<Double-Button-1>", self._on_double_click)
+            # Scroll-wheel zoom (macOS/Windows)
+            widget.bind("<MouseWheel>", self._on_mousewheel)
+            # Scroll-wheel zoom (Linux)
+            widget.bind("<Button-4>", lambda e: self._on_scroll(1))
+            widget.bind("<Button-5>", lambda e: self._on_scroll(-1))
 
         # Context menu
         self._menu: tk.Menu | None = None
@@ -326,6 +332,18 @@ class Overlay:
     def _on_double_click(self, event: tk.Event) -> None:
         self._user_dragged = False
         self._place_window()
+
+    def _on_mousewheel(self, event: tk.Event) -> None:
+        if platform.system() == "Darwin":
+            delta = 1 if event.delta > 0 else -1
+        else:
+            delta = 1 if event.delta > 0 else -1
+        self._on_scroll(delta)
+
+    def _on_scroll(self, delta: int) -> None:
+        step = 2 if delta > 0 else -2
+        self._font_size = max(8, min(120, self._font_size + step))
+        self.text_font.configure(size=self._font_size)
 
     def set_min_width(self, width: int) -> None:
         self._min_text_width = max(self._min_text_width, width)

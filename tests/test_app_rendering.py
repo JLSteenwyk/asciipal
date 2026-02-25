@@ -43,8 +43,8 @@ def test_weather_panel_renders_below_ground() -> None:
     text = display.text
     assert "Weather" in text
     lines = text.split("\n")
-    # Weather panel must appear after ground borders
-    ground_idx = max(i for i, l in enumerate(lines) if l.startswith("╚"))
+    # Weather panel must appear after ground (sand row with ·. pattern)
+    ground_idx = max(i for i, l in enumerate(lines) if "·" in l and "." in l and "Weather" not in l)
     weather_idx = next(i for i, l in enumerate(lines) if "Weather" in l)
     assert weather_idx > ground_idx
     # Check weather_panel region tag is used
@@ -97,9 +97,8 @@ def test_water_surface_row_has_water_tag() -> None:
         achievement_line="",
         inner_w=30,
     )
-    # The first content row (after top border) should have water tags
-    # Row 0 = top border, Row 1 = water surface
-    assert "water" in display.regions[1]
+    # Row 0 is now the water surface (no top border)
+    assert "water" in display.regions[0]
 
 
 def test_ground_uses_sand_tag() -> None:
@@ -114,14 +113,12 @@ def test_ground_uses_sand_tag() -> None:
     )
     text = display.text
     lines = text.split("\n")
-    # Find ground lines (╔ and ╚)
-    ground_top_idx = next(i for i, l in enumerate(lines) if l.startswith("╔"))
-    ground_bot_idx = next(i for i, l in enumerate(lines) if l.startswith("╚"))
-    assert all(t == "sand" for t in display.regions[ground_top_idx])
-    assert all(t == "sand" for t in display.regions[ground_bot_idx])
+    # Find the single sand row by its ·. pattern (no box-drawing corners)
+    sand_idx = next(i for i, l in enumerate(lines) if "·" in l and "." in l and l.strip().replace("·", "").replace(".", "") == "")
+    assert all(t == "sand" for t in display.regions[sand_idx])
 
 
-def test_top_border_has_wave_pattern() -> None:
+def test_top_row_is_water_surface() -> None:
     display = _compose_display(
         char_art="X",
         above_lines=[],
@@ -132,7 +129,8 @@ def test_top_border_has_wave_pattern() -> None:
         inner_w=30,
     )
     lines = display.text.split("\n")
-    assert "\u00b7" in lines[0] or "\u02d9" in lines[0] or "." in lines[0]
+    # Row 0 is water surface with `. ·` pattern
+    assert "." in lines[0] or "\u00b7" in lines[0]
 
 
 def test_pomodoro_panel_appears_when_provided() -> None:
