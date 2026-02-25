@@ -84,10 +84,10 @@ class BubbleSystem:
     def update(
         self, totals: ActivityTotals, content_w: int, content_h: int, frame: int,
     ) -> list[Particle]:
-        # Move existing bubbles upward with slight horizontal drift
+        # Move existing bubbles upward with rightward drift matching the current
         for b in self._bubbles:
             b.y -= 1
-            b.x += self._rng.choice([-1, 0, 0, 1])
+            b.x += self._rng.choice([0, 0, 0, 1, 1])
             b.x = max(0, min(b.x, content_w - 1))
 
         # Remove bubbles that floated above the top

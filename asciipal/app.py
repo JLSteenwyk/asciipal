@@ -203,18 +203,16 @@ def _compose_display(
                     content_lines[row_idx] = line[:col] + ch + line[col + 1:]
                     content_regions[row_idx][col] = tag
 
-    # Fill remaining empty spaces with subtle water texture
-    # Gentle drift — shifts once every 2 frames for a calm underwater feel
-    _water_fill_chars = ("·", "∙", "·", "˙")
-    slow_frame = anim_frame // 2
-    for row_idx in range(1, len(content_lines)):  # skip row 0 (water surface)
+    # Occasional water movement — a few drifting ~ chars, very sparse
+    slow_frame = anim_frame // 3
+    for row_idx in range(1, len(content_lines)):
         line = content_lines[row_idx]
         regions = content_regions[row_idx]
         buf = list(line)
         for col in range(len(buf)):
             if buf[col] == " " and regions[col] == "default":
-                if (row_idx + col + slow_frame) % 7 == 0:
-                    buf[col] = _water_fill_chars[(row_idx + col) % len(_water_fill_chars)]
+                if (row_idx * 13 + col + slow_frame) % 31 == 0:
+                    buf[col] = "~"
                     regions[col] = "water"
         content_lines[row_idx] = "".join(buf)
 
