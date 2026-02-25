@@ -1,13 +1,15 @@
-# 🖥️ AsciiPal — Your ASCII Desktop Companion
+# AsciiPal — Your ASCII Desktop Companion
 
 > A lightweight desktop pet that watches your keyboard and mouse activity, reacts with expressive ASCII art animations, and reminds you to take breaks.
 
 ```
-    ╔══════════╗
-    ║  (◕‿◕)   ║   "You've been typing for 45 minutes.
-    ║  /|  |\  ║    Stretch those fingers!"
-    ║   |  |   ║
-    ╚══════════╝
+              .
+               __
+              / _)
+     _.----._/ /
+    /         /
+ __/ (  | (  |
+/__.-'|_|--|_|
 ```
 
 ## Overview
@@ -18,42 +20,57 @@ Think of it as a modern, privacy-respecting, open-source take on the classic des
 
 ## Features
 
-### 🎭 Reactive Character States
+### Reactive Character States
 
-AsciiPal transitions between expressive states based on your input patterns:
+AsciiPal transitions between 9 expressive states based on your input patterns:
 
-| State | Trigger | Example Art |
+| State | Trigger | Description |
 |-------|---------|-------------|
-| **Idle** | No input for 10s | `(• ᴗ •)` |
-| **Sleeping** | No input for 2min | `(－ω－) zzZ` |
-| **Watching** | Slow, steady typing | `(° ᴗ °)` |
-| **Excited** | Fast typing streak | `(★ ᴗ ★)` |
-| **Dizzy** | Rapid mouse movement | `(@ ᴗ @)` |
-| **Alarmed** | Rage-clicking detected | `(◉_◉)` |
-| **Cheering** | Long productivity streak | `\\(★ ᴗ ★)/` |
+| **Idle** | No input for 10s | Default resting state |
+| **Sleeping** | No input for 2min | Dozing off |
+| **Watching** | Slow, steady typing | Paying attention |
+| **Excited** | Fast typing (80+ WPM) | Celebrating your flow |
+| **Dizzy** | Rapid mouse movement | Overwhelmed by motion |
+| **Alarmed** | Rage-clicking (5+/sec) | Startled by clicks |
+| **Cheering** | 45min productivity streak | Celebrating you |
+| **Sweating** | High CPU load | Feeling the heat |
+| **Eating** | Idle with plants nearby | Munching on the garden |
 
-### ⏰ Break Reminders
+Each state has custom 2-frame ASCII art animations bundled in `asciipal/assets/art/`.
 
-- Configurable activity-based break timer (default: every 25 minutes of continuous activity)
-- Pomodoro mode with work/break cycles
-- Gentle escalation: suggestion → insistence → ASCII tantrum
-- Tracks total active time and breaks taken per session
+### Break Reminders
 
-### 🌱 Living Aquarium
+- Configurable activity-based break timer (default: every 25 minutes)
+- **Pomodoro mode** with separate work/break cycle timers
+- Gentle escalation: suggestion → insistence → tantrum
+- Right-click context menu to take or skip breaks
+- Tracks breaks taken per session and across days
 
-- Plants grow *around* the character as you accumulate active time
-- Four growth stages unlock at 1, 3, 5, and 10 minutes of activity
-- A progress bar below the aquarium shows how close you are to the next plant level
+### Living Aquarium
 
-```
-[####--------------------] Plant 1/4    (growing toward level 2)
-[########################] MAX          (fully grown)
-```
+Your workspace is an underwater scene with a water surface, sandy ground, and a garden that grows with your activity.
 
-### 🫧 Bubbles, Fireflies & Companions
+**Plant growth** progresses through 8 levels as you accumulate active time:
 
-- **Rising bubbles** (`·`, `°`, `o`) float upward from the bottom, spawning faster with more activity
-- **Fireflies** (`*`, `+`, `·`) drift and blink around the character at night or during flow states
+| Level | Active Time | Garden |
+|-------|-------------|--------|
+| 1 | 5 min | 1 sprout |
+| 2 | 10 min | Sprout grows |
+| 3 | 20 min | 2nd sprout appears |
+| 4 | 30 min | Both grow |
+| 5 | 45 min | 3rd sprout |
+| 6 | 1 hour | All grow taller |
+| 7 | 90 min | 4th plant |
+| 8 | 2 hours | Full garden with flowers |
+
+Plants evolve from sprouts (`i`) to buds to blooms (`\w/`) to flowers (`(@)`). A progress bar below the scene shows how close you are to the next level.
+
+**Biome decorations** appear as you accumulate monthly active hours, adding ambient detail to the scene.
+
+### Bubbles, Fireflies & Companions
+
+- **Rising bubbles** float upward, spawning faster with more activity
+- **Fireflies** drift and blink around the character at night or during flow states
 - **Companion creatures** unlock as you hit milestones:
 
 | Creature | Sprite | Unlock |
@@ -61,23 +78,62 @@ AsciiPal transitions between expressive states based on your input patterns:
 | Fish | `><>` | 500 keypresses |
 | Butterfly | `}{` | 30 min active time |
 | Snail | `@/` | 3 breaks taken |
+| Cat | `=^.^=` | 2,000 keypresses |
+| Crab | `V(;,;)V` | 83 min active time |
+| Seahorse | `S~` | 10 breaks taken |
 
 All effects overlay in empty spaces — they never obscure the character or plants.
 
-### 📊 Activity Awareness
+### Weather
 
-- Monitors typing speed (WPM estimate)
-- Tracks mouse movement intensity
-- Detects click frequency and patterns
-- All processing is **local** — no data leaves your machine
+When enabled, AsciiPal fetches real weather data from [wttr.in](https://wttr.in) and displays conditions in a panel below the aquarium. Supports 8 conditions: clear, cloudy, rain, heavy rain, snow, thunder, fog, and sleet.
 
-### 🎨 Customization
+### Time Awareness
 
-- Swap in your own ASCII art for each state
-- Adjust activity thresholds and break intervals
-- Choose character size and screen position
-- Toggle between minimal and verbose notification modes
-- Custom color schemes for the character window
+Optional sky effects based on time of day — sun in the morning, half-moons in the evening, stars and a crescent at night.
+
+### System Monitoring
+
+- **CPU load** — displayed in the System panel; triggers the "sweating" state when load is high
+- **Disk usage** — used/total GB
+- **RAM usage** — used/total GB
+- **Battery** — percentage and charging status
+
+### Achievements & Streaks
+
+Milestones unlock as you accumulate lifetime stats:
+
+- **Keypresses:** 1K, 5K, 10K, 50K, 100K
+- **Active hours:** 1h, 5h, 10h, 50h, 100h
+- **Mouse distance:** 10km, 50km, 100km
+- **Use streaks:** 3, 7, 14, 30, 60, 100 consecutive days
+
+View your lifetime stats anytime with `asciipal --stats`.
+
+### Session Goals
+
+Set a daily goal in minutes. AsciiPal shows a progress bar and triggers a cheering animation when you reach it.
+
+### Color Schemes
+
+Five built-in themes with per-region coloring:
+
+| Scheme | Style |
+|--------|-------|
+| `default` | Warm neutral tones |
+| `green-terminal` | Classic green-on-dark |
+| `pastel` | Soft muted palette |
+| `amber-terminal` | Retro amber monitor |
+| `ocean` | Cool blue-green tones |
+
+### Customization
+
+- Swap in your own ASCII art for any state via file paths in config
+- Adjust all activity thresholds and break intervals
+- Choose from 9 screen positions
+- Scroll-wheel zoom to resize the character
+- Drag to reposition; double-click to reset
+- Toggle between widget mode (transparent) and panel mode
 
 ## Tech Stack
 
@@ -85,8 +141,8 @@ All effects overlay in empty spaces — they never obscure the character or plan
 |-----------|------------|
 | Language | Python 3.10+ |
 | GUI | Tkinter (transparent, always-on-top overlay) |
-| Input Monitoring | `pynput` (cross-platform keyboard + mouse listener) |
-| State Machine | Custom finite state machine with cooldowns and transitions |
+| Input Monitoring | `pynput` (cross-platform keyboard + mouse) |
+| State Machine | Custom FSM with cooldowns and priority transitions |
 | Config | YAML (`~/.asciipal/config.yaml`) |
 
 ## Installation
@@ -99,8 +155,8 @@ All effects overlay in empty spaces — they never obscure the character or plan
 ### From Source
 
 ```bash
-git clone <repo-url>
-cd ASCIPAL
+git clone https://github.com/JLSteenwyk/asciipal.git
+cd asciipal
 pip install -e .
 ```
 
@@ -117,14 +173,19 @@ make install
 make check
 ```
 
-### Headless and Diagnostics
+### CLI Reference
 
 ```bash
-asciipal --headless --max-ticks 40
-asciipal --doctor
-asciipal --init-config
-asciipal --print-config
-asciipal --headless --demo --duration-seconds 30
+asciipal                                    # Launch with GUI overlay
+asciipal --headless --max-ticks 40          # Debug mode (no GUI)
+asciipal --demo --duration-seconds 30       # Demo with synthetic input
+asciipal --doctor                           # Print runtime diagnostics
+asciipal --init-config                      # Create default config file
+asciipal --print-config                     # Print effective config
+asciipal --print-state                      # Print current computed state
+asciipal --stats                            # Print lifetime stats & achievements
+asciipal --no-summary                       # Suppress session summary on exit
+asciipal --config /path/to/config.yaml      # Use custom config file
 ```
 
 `--demo` is the fastest way to test behavior without granting input-monitoring permissions.
@@ -144,26 +205,45 @@ pomodoro_work_minutes: 25
 pomodoro_break_minutes: 5
 
 # Activity thresholds
-typing_fast_wpm: 80          # WPM to trigger "excited" state
-rage_click_threshold: 5       # clicks/sec to trigger "alarmed"
-dizzy_mouse_speed: 700        # mouse speed threshold for "dizzy"
-cheering_after_minutes: 45    # active minutes before "cheering"
-state_cooldown_seconds: 2.0   # minimum time between state changes
+typing_fast_wpm: 80
+rage_click_threshold: 5
+dizzy_mouse_speed: 700
+cheering_after_minutes: 45
+state_cooldown_seconds: 2.0
 idle_timeout_seconds: 10
 sleep_timeout_seconds: 120
 
 # Display
-position: bottom-right        # top-left | top-right | bottom-left | bottom-right
+position: bottom-right
 character_scale: 1.0
-widget_mode: true             # true = transparent widget style, false = panel style
-widget_opacity: 0.95          # 0.2 - 1.0
-color_scheme: default         # default | green-terminal | pastel
-notifications: gentle         # gentle | verbose | silent
+widget_mode: true
+widget_opacity: 0.95
+color_scheme: default
 
-# Custom ASCII art (override any state)
+# Notifications
+notifications: gentle          # gentle | verbose | silent
+
+# Optional features
+weather_enabled: false
+weather_location: ""           # city name or coordinates
+weather_poll_minutes: 30
+time_awareness_enabled: false
+system_resources_enabled: true
+cpu_load_enabled: true
+sweating_load_threshold: 0.8
+battery_enabled: true
+session_goal_minutes: 0        # 0 = disabled
+
+# Custom ASCII art (override any state with a file path)
 custom_art:
-  idle: null                  # set to file path for custom art
+  idle: null
   sleeping: null
+  watching: null
+  excited: null
+  dizzy: null
+  alarmed: null
+  cheering: null
+  sweating: null
 ```
 
 ## Architecture
@@ -171,18 +251,24 @@ custom_art:
 ```
 asciipal/
 ├── __main__.py           # Entry point
-├── app.py                # Main application loop
-├── character.py          # ASCII art definitions and rendering
-├── state_machine.py      # State transitions and cooldown logic
+├── app.py                # Main application loop and display composition
+├── character.py          # ASCII art loading and frame animation
+├── state_machine.py      # State transitions with priority and cooldowns
 ├── input_monitor.py      # Keyboard and mouse listeners (pynput)
 ├── activity_tracker.py   # WPM, click rate, and movement calculations
-├── aquarium.py           # Progress bar and plant growth decorations
+├── aquarium.py           # Plant growth, progress bar, biome decorations
 ├── effects.py            # Bubbles, fireflies, and companion creatures
-├── break_manager.py      # Timer logic and reminder escalation
-├── overlay.py            # Tkinter transparent window management
-├── config.py             # YAML config loader and defaults
+├── break_manager.py      # Timer logic and break escalation
+├── achievements.py       # Milestones, streaks, and lifetime stats
+├── weather.py            # Weather data fetching and condition mapping
+├── time_awareness.py     # Time-of-day sky effects
+├── system_resources.py   # CPU, disk, and RAM monitoring
+├── battery.py            # Battery status detection
+├── overlay.py            # Tkinter window, color schemes, drag/zoom
+├── config.py             # YAML config loader and validation
+├── platform_support.py   # Platform-specific diagnostics
 └── assets/
-    └── art/              # ASCII art files per state (default bundled art)
+    └── art/              # Bundled ASCII art files (2 frames per state)
 ```
 
 ## Privacy
@@ -191,7 +277,7 @@ AsciiPal processes all input events locally in memory. It does **not**:
 
 - Log or store keystrokes
 - Record what you type
-- Send any data over the network
+- Send any data over the network (except optional weather lookups)
 - Capture screenshots or window content
 
 The input monitor only tracks **aggregate metrics** (typing speed, click frequency, mouse velocity) — never individual key values or click targets.
@@ -200,10 +286,10 @@ The input monitor only tracks **aggregate metrics** (typing speed, click frequen
 
 | Platform | Status | Notes |
 |----------|--------|-------|
-| macOS | ✅ | Requires Accessibility permission |
-| Windows | ✅ | Works out of the box |
-| Linux (X11) | ✅ | May need `xdotool` for some features |
-| Linux (Wayland) | ⚠️ | Limited — global input capture is restricted |
+| macOS | Supported | Requires Accessibility permission |
+| Windows | Supported | Works out of the box |
+| Linux (X11) | Supported | May need `xdotool` for some features |
+| Linux (Wayland) | Partial | Global input capture is restricted |
 
 ## Contributing
 
@@ -222,8 +308,11 @@ MIT
 ---
 
 ```
-   ( ◕ ᴗ ◕ )
-   /|     |\      "Go build something fun.
-    |     |        I'll be here when you get back."
-   / \   / \
+              .
+               __
+              / _)
+     _.----._/ /        "Go build something fun.
+    /         /          I'll be here when you get back."
+ __/ (  | (  |
+/__.-'|_|--|_|
 ```

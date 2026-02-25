@@ -98,7 +98,7 @@ def _get_memory_windows() -> tuple[float, float]:
 
     stat = MEMORYSTATUSEX()
     stat.dwLength = ctypes.sizeof(MEMORYSTATUSEX)
-    ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat))
+    ctypes.windll.kernel32.GlobalMemoryStatusEx(ctypes.byref(stat))  # type: ignore[attr-defined]
     total_gb = stat.ullTotalPhys / (1024 ** 3)
     used_gb = (stat.ullTotalPhys - stat.ullAvailPhys) / (1024 ** 3)
     return used_gb, total_gb

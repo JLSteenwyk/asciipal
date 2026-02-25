@@ -81,7 +81,7 @@ def _get_battery_windows() -> BatterySnapshot:
             ]
 
         status = SYSTEM_POWER_STATUS()
-        ctypes.windll.kernel32.GetSystemPowerStatus(ctypes.byref(status))
+        ctypes.windll.kernel32.GetSystemPowerStatus(ctypes.byref(status))  # type: ignore[attr-defined]
         if status.BatteryFlag == 128:  # No battery
             return BatterySnapshot(percent=0, charging=False, available=False)
         percent = min(status.BatteryLifePercent, 100)

@@ -84,7 +84,7 @@ def _merge_plants_colored(
     char_lines = char_art.split("\n")
     centered = [f"{line:^{content_w}}" for line in char_lines]
     if not plant_lines:
-        regions = []
+        regions: list[list[str]] = []
         for line in centered:
             row_tags = ["dino" if ch != " " else "default" for ch in line]
             regions.append(row_tags)
@@ -96,7 +96,7 @@ def _merge_plants_colored(
 
     plant_start = result_height - len(plant_lines)
     merged: list[str] = []
-    regions: list[list[str]] = []
+    regions = []
     for i, line in enumerate(centered):
         plant_idx = i - plant_start
         if 0 <= plant_idx < len(plant_lines):
