@@ -166,6 +166,30 @@ class TestWeatherManagerMockFetch:
 
         assert manager.current_effect(0) is None
 
+    def test_current_condition_name_returns_title_cased(self) -> None:
+        config = _make_config(weather_enabled=True, weather_location="TestCity")
+        manager = WeatherManager(config)
+
+        # Set heavy_rain effect
+        mock_resp = self._mock_response(305)
+        mock_resp.status = 200
+        mock_resp.headers = {}
+        with patch("asciipal.weather.urllib.request.urlopen", return_value=mock_resp):
+            manager._fetch_weather()
+
+        name = manager.current_condition_name()
+        assert name == "Heavy Rain"
+
+    def test_current_condition_name_returns_none_when_disabled(self) -> None:
+        config = _make_config(weather_enabled=False)
+        manager = WeatherManager(config)
+        assert manager.current_condition_name() is None
+
+    def test_current_condition_name_returns_none_no_effect(self) -> None:
+        config = _make_config(weather_enabled=True)
+        manager = WeatherManager(config)
+        assert manager.current_condition_name() is None
+
     def test_fetch_error_keeps_last_effect(self) -> None:
         config = _make_config(weather_enabled=True, weather_location="TestCity")
         manager = WeatherManager(config)

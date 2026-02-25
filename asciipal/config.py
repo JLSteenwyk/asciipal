@@ -50,6 +50,7 @@ DEFAULT_CONFIG: dict[str, Any] = {
     "weather_location": "",
     "weather_poll_minutes": 30,
     "time_awareness_enabled": False,
+    "system_resources_enabled": True,
 }
 
 
@@ -78,6 +79,7 @@ class Config:
     weather_location: str = ""
     weather_poll_minutes: int = 30
     time_awareness_enabled: bool = False
+    system_resources_enabled: bool = True
 
     @classmethod
     def from_dict(cls, data: dict[str, Any]) -> "Config":
@@ -106,6 +108,7 @@ class Config:
             weather_location=str(data["weather_location"]),
             weather_poll_minutes=max(5, int(data["weather_poll_minutes"])),
             time_awareness_enabled=bool(data["time_awareness_enabled"]),
+            system_resources_enabled=bool(data["system_resources_enabled"]),
         )
 
 

@@ -218,3 +218,16 @@ class WeatherManager:
             return None
         idx = frame % 2
         return (effect.above[idx], effect.below[idx])
+
+    def current_condition_name(self) -> str | None:
+        """Return the title-cased name of the current weather condition.
+
+        Returns ``None`` if weather is disabled or no effect is set.
+        """
+        if not self._config.weather_enabled:
+            return None
+        with self._lock:
+            effect_name = self._current_effect
+        if effect_name is None:
+            return None
+        return effect_name.replace("_", " ").title()

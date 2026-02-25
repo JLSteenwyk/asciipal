@@ -3,7 +3,7 @@ from __future__ import annotations
 import argparse
 import platform
 import subprocess
-from dataclasses import asdict
+from dataclasses import asdict, dataclass
 from datetime import datetime
 import signal
 import sys
@@ -23,6 +23,7 @@ from asciipal.input_monitor import InputCallbacks, InputMonitor
 from asciipal.overlay import MenuCallbacks, Overlay
 from asciipal.platform_support import runtime_summary, startup_warnings
 from asciipal.state_machine import StateMachine
+from asciipal.system_resources import SystemResourcesManager
 from asciipal.time_awareness import TimeAwarenessManager
 from asciipal.weather import WeatherManager
 
@@ -65,6 +66,55 @@ def _merge_plants(char_art: str, plant_lines: list[str], content_w: int) -> list
     return merged
 
 
+@dataclass
+class ColoredDisplay:
+    text: str
+    regions: list[list[str]]  # regions[row][col] = tag name
+
+
+def _merge_plants_colored(
+    char_art: str, plant_lines: list[str], content_w: int,
+) -> tuple[list[str], list[list[str]]]:
+    """Like ``_merge_plants`` but also returns a per-cell region grid.
+
+    Dinosaur characters are tagged ``"dino"``, plant characters ``"plant"``,
+    and spaces ``"default"``.
+    """
+    char_lines = char_art.split("\n")
+    centered = [f"{line:^{content_w}}" for line in char_lines]
+    if not plant_lines:
+        regions = []
+        for line in centered:
+            row_tags = ["dino" if ch != " " else "default" for ch in line]
+            regions.append(row_tags)
+        return centered, regions
+
+    result_height = max(len(centered), len(plant_lines))
+    while len(centered) < result_height:
+        centered.insert(0, " " * content_w)
+
+    plant_start = result_height - len(plant_lines)
+    merged: list[str] = []
+    regions: list[list[str]] = []
+    for i, line in enumerate(centered):
+        plant_idx = i - plant_start
+        if 0 <= plant_idx < len(plant_lines):
+            buf = list(line.ljust(content_w))
+            tag_row = ["dino" if ch != " " else "default" for ch in buf]
+            plant_line = plant_lines[plant_idx]
+            for j, ch in enumerate(plant_line):
+                if j < content_w and ch != " " and buf[j] == " ":
+                    buf[j] = ch
+                    tag_row[j] = "plant"
+            merged.append("".join(buf))
+            regions.append(tag_row)
+        else:
+            row_tags = ["dino" if ch != " " else "default" for ch in line]
+            merged.append(line)
+            regions.append(row_tags)
+    return merged, regions
+
+
 def _compose_display(
     char_art: str,
     above_lines: list[str],
@@ -73,13 +123,17 @@ def _compose_display(
     status_line: str,
     achievement_line: str,
     inner_w: int,
-    overlays: list[tuple[int, int, str]] | None = None,
-) -> str:
+    overlays: list[tuple[int, int, str, str]] | None = None,
+    weather_panel_lines: list[str] | None = None,
+    sysinfo_line: str = "",
+) -> ColoredDisplay:
     """Build the aquarium display with water surface and sandy ground.
 
     Weather effects go above the character. Plants grow around the
     character. Effect overlays (bubbles, fireflies, creatures) fill
     empty spaces. Progress bar sits below the aquarium ground.
+
+    Returns a ``ColoredDisplay`` with both the text and per-cell region tags.
     """
     top = f"╭{'~' * inner_w}╮"
     ground_top = f"╔{'═' * inner_w}╗"
@@ -87,38 +141,113 @@ def _compose_display(
     total_w = inner_w + 2
     content_w = inner_w - 2  # 1-char padding on each side
 
-    # Build content lines, all exactly content_w wide
+    # Build content lines and region grid, all exactly content_w wide
     content_lines: list[str] = []
+    content_regions: list[list[str]] = []
+
     for line in above_lines:
         if line.strip():
-            content_lines.append(f"{line:^{content_w}}")
-    for line in _merge_plants(char_art, plant_lines, content_w):
-        content_lines.append(f"{line:^{content_w}}")
+            centered = f"{line:^{content_w}}"
+            content_lines.append(centered)
+            content_regions.append(
+                ["weather" if ch != " " else "default" for ch in centered]
+            )
+
+    merged_lines, merged_regions = _merge_plants_colored(char_art, plant_lines, content_w)
+    for line, region_row in zip(merged_lines, merged_regions):
+        centered = f"{line:^{content_w}}"
+        # If centering added padding, adjust region row to match
+        pad_left = len(centered) - len(centered.lstrip(" "))
+        # Re-check: centered may already be content_w wide from _merge_plants_colored
+        if len(region_row) < content_w:
+            extra = content_w - len(region_row)
+            left_pad = extra // 2
+            right_pad = extra - left_pad
+            region_row = ["default"] * left_pad + region_row + ["default"] * right_pad
+        content_lines.append(centered)
+        content_regions.append(region_row[:content_w])
 
     # Apply effect overlays (only fill empty spaces)
     if overlays:
-        for row_idx, col, ch in overlays:
+        for row_idx, col, ch, tag in overlays:
             if 0 <= row_idx < len(content_lines) and 0 <= col < content_w:
                 line = content_lines[row_idx]
                 if col < len(line) and line[col] == " ":
                     content_lines[row_idx] = line[:col] + ch + line[col + 1:]
+                    content_regions[row_idx][col] = tag
 
-    # Frame with borders
+    # Frame with borders — build output parts and region rows
     parts: list[str] = [top]
-    for line in content_lines:
+    all_regions: list[list[str]] = [["border"] * total_w]
+
+    for i, line in enumerate(content_lines):
         parts.append(f"│ {line} │")
+        row_tags = (
+            ["border"] + ["default"]  # │ and space
+            + content_regions[i]
+            + ["default"] + ["border"]  # space and │
+        )
+        all_regions.append(row_tags)
 
     parts.append(ground_top)
+    all_regions.append(["border"] * total_w)
     parts.append(ground_bot)
+    all_regions.append(["border"] * total_w)
 
     if progress_line:
-        parts.append(f"{progress_line:^{total_w}}")
+        centered = f"{progress_line:^{total_w}}"
+        parts.append(centered)
+        all_regions.append(
+            ["progress" if ch != " " else "default" for ch in centered]
+        )
     if status_line:
-        parts.append(f"{status_line:^{total_w}}")
+        centered = f"{status_line:^{total_w}}"
+        parts.append(centered)
+        all_regions.append(
+            ["status" if ch != " " else "default" for ch in centered]
+        )
     if achievement_line:
-        parts.append(f"{achievement_line:^{total_w}}")
+        centered = f"{achievement_line:^{total_w}}"
+        parts.append(centered)
+        all_regions.append(
+            ["achievement" if ch != " " else "default" for ch in centered]
+        )
 
-    return "\n".join(parts)
+    # Sub-panels below the aquarium
+    for panel_tag, panel_title, panel_content_lines in [
+        ("weather_panel", "Weather", weather_panel_lines or []),
+        ("sysinfo", "System", [sysinfo_line] if sysinfo_line else []),
+    ]:
+        if not panel_content_lines:
+            continue
+        # Blank separator
+        parts.append("")
+        all_regions.append(["default"] * total_w)
+        # Top border:  ╭── Title ──...──╮
+        label = f"── {panel_title} "
+        fill_len = max(total_w - 2 - len(label), 0)
+        top_border = f"╭{label}{'─' * fill_len}╮"
+        parts.append(top_border)
+        all_regions.append([panel_tag] * len(top_border))
+        # Content rows
+        for cl in panel_content_lines:
+            padded = f"{cl:^{total_w - 4}}"
+            row = f"│ {padded} │"
+            row_tags = (
+                [panel_tag]  # │
+                + ["default"]  # space
+                + [panel_tag if ch != " " else "default" for ch in padded]
+                + ["default"]  # space
+                + [panel_tag]  # │
+            )
+            parts.append(row)
+            all_regions.append(row_tags)
+        # Bottom border
+        bot_border = f"╰{'─' * (total_w - 2)}╯"
+        parts.append(bot_border)
+        all_regions.append([panel_tag] * len(bot_border))
+
+    return ColoredDisplay(text="\n".join(parts), regions=all_regions)
 
 
 class AsciiPalApp:
@@ -172,6 +301,7 @@ class AsciiPalApp:
                 self.headless = True
                 self.startup_notes.append(f"GUI overlay unavailable: {exc}. Falling back to headless mode.")
         self.weather = WeatherManager(config)
+        self.system_resources = SystemResourcesManager()
         self.input_monitor = InputMonitor(
             InputCallbacks(
                 on_keypress=self.tracker.record_keypress,
@@ -218,14 +348,23 @@ class AsciiPalApp:
         state, break_line = self._render_status(transition.state, break_status)
         art = self.character.art_for(state, self._anim_frame)
 
-        # Collect decoration lines — everything goes above the character
+        # Collect decoration lines — only time effects go above the character
         above_lines: list[str] = []
         time_effect = self.time_awareness.current_effect(self._anim_frame)
         weather_effect = self.weather.current_effect(self._anim_frame)
         if time_effect is not None and time_effect[0]:
             above_lines.append(time_effect[0])
+
+        # Build weather panel content (rendered below aquarium)
+        weather_panel_lines: list[str] | None = None
         if weather_effect is not None and weather_effect[0]:
-            above_lines.append(weather_effect[0])
+            condition_name = self.weather.current_condition_name() or ""
+            weather_panel_lines = [f"{weather_effect[0]}  {condition_name}"]
+
+        # Build system resources line
+        sysinfo_line = ""
+        if self.config.system_resources_enabled:
+            sysinfo_line = self.system_resources.format_line()
         # Aquarium scene: plants around character, progress bar below
         totals = self.tracker.totals(now=now)
         content_w = self._display_inner_w - 2
@@ -249,13 +388,15 @@ class AsciiPalApp:
 
         achievement_line = self.achievements.update(totals, self.break_manager.breaks_taken)
         if self.overlay is not None:
-            display = _compose_display(
+            colored = _compose_display(
                 art, above_lines, plant_lines,
                 progress_line, break_line, achievement_line or "",
                 self._display_inner_w,
                 overlays=overlays,
+                weather_panel_lines=weather_panel_lines,
+                sysinfo_line=sysinfo_line,
             )
-            self.overlay.update_text(display)
+            self.overlay.update_colored(colored)
         else:
             line = f"State={state}"
             if break_line:

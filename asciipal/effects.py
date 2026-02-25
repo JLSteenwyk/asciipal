@@ -77,7 +77,7 @@ class BubbleSystem:
 
         # Spawn new bubbles based on activity
         rate = self._spawn_rate(totals)
-        if rate > 0 and self._rng.random() < rate and len(self._bubbles) < 8:
+        if rate > 0 and self._rng.random() < rate and len(self._bubbles) < 4:
             x = self._rng.randint(1, max(1, content_w - 2))
             char = self._rng.choices(BUBBLE_CHARS, weights=[3, 2, 1])[0]
             self._bubbles.append(Particle(x=x, y=content_h - 1, char=char))
@@ -147,7 +147,7 @@ class CreatureSystem:
     def update(
         self, totals: ActivityTotals, breaks_taken: int,
         content_w: int, content_h: int, frame: int,
-    ) -> list[tuple[int, int, str]]:
+    ) -> list[tuple[int, int, str, str]]:
         # Check for new unlocks
         for i, cd in enumerate(CREATURE_DEFS):
             if cd.name in self._unlocked:
@@ -166,7 +166,7 @@ class CreatureSystem:
                 self._creatures.append(ActiveCreature(defn=cd, x=x, y=y, dx=dx))
 
         # Move and render creatures
-        result: list[tuple[int, int, str]] = []
+        result: list[tuple[int, int, str, str]] = []
         for c in self._creatures:
             if frame % 2 == 0:
                 c.x += c.dx
@@ -185,7 +185,7 @@ class CreatureSystem:
 
             for j, ch in enumerate(sprite):
                 if ch != " " and 0 <= c.x + j < content_w:
-                    result.append((c.y, c.x + j, ch))
+                    result.append((c.y, c.x + j, ch, c.defn.name))
 
         return result
 
@@ -208,15 +208,15 @@ class EffectsManager:
         frame: int,
         is_night: bool = False,
         is_flow: bool = False,
-    ) -> list[tuple[int, int, str]]:
-        """Return ``(row, col, char)`` overlays for the aquarium content area."""
-        overlays: list[tuple[int, int, str]] = []
+    ) -> list[tuple[int, int, str, str]]:
+        """Return ``(row, col, char, region_tag)`` overlays for the aquarium content area."""
+        overlays: list[tuple[int, int, str, str]] = []
 
         for p in self.bubbles.update(totals, content_w, content_h, frame):
-            overlays.append((p.y, p.x, p.char))
+            overlays.append((p.y, p.x, p.char, "bubble"))
 
         for p in self.fireflies.update(is_night, is_flow, content_w, content_h, frame):
-            overlays.append((p.y, p.x, p.char))
+            overlays.append((p.y, p.x, p.char, "firefly"))
 
         overlays.extend(
             self.creatures.update(totals, breaks_taken, content_w, content_h, frame)

@@ -138,7 +138,7 @@ class TestCreatureSystem:
         system = CreatureSystem(random.Random(42))
         totals = _totals(keypresses=9999, active_seconds=9999)
         for frame in range(200):
-            for row, col, ch in system.update(totals, 10, 34, 10, frame=frame):
+            for row, col, ch, _tag in system.update(totals, 10, 34, 10, frame=frame):
                 assert 0 <= row < 10
                 assert 0 <= col < 34
 
@@ -159,11 +159,12 @@ class TestEffectsManager:
         overlays = mgr.update(totals, 0, 34, 10, frame=0, is_night=True)
         assert isinstance(overlays, list)
         for item in overlays:
-            assert len(item) == 3
-            row, col, ch = item
+            assert len(item) == 4
+            row, col, ch, tag = item
             assert isinstance(row, int)
             assert isinstance(col, int)
             assert isinstance(ch, str)
+            assert isinstance(tag, str)
 
     def test_no_overlays_without_triggers(self) -> None:
         mgr = EffectsManager(random.Random(42))
@@ -174,7 +175,7 @@ class TestEffectsManager:
         mgr = EffectsManager(random.Random(42))
         totals = _totals(keypresses=9999, clicks=9999, active_seconds=9999)
         for frame in range(100):
-            for row, col, ch in mgr.update(
+            for row, col, ch, _tag in mgr.update(
                 totals, 10, 34, 10, frame=frame, is_night=True, is_flow=True,
             ):
                 assert 0 <= row < 10
