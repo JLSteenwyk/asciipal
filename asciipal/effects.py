@@ -6,7 +6,7 @@ from dataclasses import dataclass
 from asciipal.activity_tracker import ActivityTotals
 
 BUBBLE_CHARS = ("·", "°", "o")
-FIREFLY_CHARS = ("*", "+", "·")
+FIREFLY_CHARS = ("·", "˙", "°")
 
 
 @dataclass(frozen=True)

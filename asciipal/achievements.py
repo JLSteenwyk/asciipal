@@ -104,21 +104,21 @@ class AchievementManager:
             aid = f"keypresses_{threshold}"
             if aid not in self._stats.unlocked and self._stats.lifetime_keypresses >= threshold:
                 self._stats.unlocked.append(aid)
-                return f"★ Keypresses: {threshold:,}! ★"
+                return f"\u00b7 keypresses: {threshold:,} \u00b7"
 
         hours = self._stats.lifetime_active_seconds / 3600
         for threshold in ACTIVE_HOUR_MILESTONES:
             aid = f"active_hours_{threshold}"
             if aid not in self._stats.unlocked and hours >= threshold:
                 self._stats.unlocked.append(aid)
-                return f"★ Active Time: {threshold}h! ★"
+                return f"\u00b7 active time: {threshold}h \u00b7"
 
         km = self._stats.lifetime_mouse_distance / UNITS_PER_KM
         for threshold in MOUSE_KM_MILESTONES:
             aid = f"mouse_km_{threshold}"
             if aid not in self._stats.unlocked and km >= threshold:
                 self._stats.unlocked.append(aid)
-                return f"★ Mouse Distance: {threshold}km! ★"
+                return f"\u00b7 mouse distance: {threshold}km \u00b7"
 
         return None
 
@@ -152,14 +152,14 @@ class AchievementManager:
             aid = f"use_streak_{threshold}"
             if aid not in self._stats.unlocked and streak >= threshold:
                 self._stats.unlocked.append(aid)
-                self._display_line = f"\u2605 Use Streak: {threshold} days! \u2605"
+                self._display_line = f"\u00b7 streak: {threshold} days \u00b7"
                 self._display_ticks_remaining = 12
 
     def streak_line(self) -> str:
         """Return streak display string, or empty if no streak."""
         if self._stats.use_streak <= 0:
             return ""
-        return f"\U0001f525 Streak: {self._stats.use_streak} days"
+        return f"\u00b7 {self._stats.use_streak} days"
 
     def update_monthly_active(self, session_seconds: float) -> None:
         """Track monthly active time."""

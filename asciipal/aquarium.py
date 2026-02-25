@@ -41,9 +41,9 @@ def _plant_progress(totals: ActivityTotals) -> tuple[int, float]:
 
 
 def _build_progress_bar(level: int, progress: float, width: int) -> str:
-    """Render ``[████████░░░░░░░░░░░] 🌿 2/8`` fitted to exactly *width* chars.
+    """Render ``[▰▰▰▰▰▰▰▰▱▱▱▱▱▱▱▱▱▱▱] 🌿 2/8`` fitted to exactly *width* chars.
 
-    At max level: ``[██████████████████] 🌿 MAX``
+    At max level: ``[▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰▰] 🌿 MAX``
     """
     max_level = len(PLANT_THRESHOLDS)
     if level >= max_level:
@@ -56,7 +56,7 @@ def _build_progress_bar(level: int, progress: float, width: int) -> str:
         bar_inner = 1
     filled = int(bar_inner * progress)
     filled = max(0, min(filled, bar_inner))
-    bar = "[" + "█" * filled + "░" * (bar_inner - filled) + "]" + suffix
+    bar = "[" + "▰" * filled + "▱" * (bar_inner - filled) + "]" + suffix
     return bar[:width]
 
 
@@ -148,9 +148,9 @@ import random as _rng_mod
 BIOME_DECORATIONS: dict[int, list[str]] = {
     0: [],
     1: [".", "\u00b7"],
-    2: ["\u2307", "\u223f"],
-    3: ["\u2307", "\u223f", "&", "%"],
-    4: ["\u03a0", "\u25c6", "\u2307", "#"],
+    2: [",", "'"],
+    3: [",", "'", "\u00b7", "."],
+    4: ["\u00b0", "\u00b7", ",", "'"],
 }
 
 

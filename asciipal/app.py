@@ -141,12 +141,12 @@ def _compose_display(
 
     Returns a ``ColoredDisplay`` with both the text and per-cell region tags.
     """
-    # Top border: alternating ≈· pattern
-    wave_unit = "≈·"
+    # Top border: gentle ripple pattern
+    wave_unit = "·˙"
     wave_fill = (wave_unit * ((inner_w + 1) // 2))[:inner_w]
     top = f"╭{wave_fill}╮"
-    # Sandy ground borders: alternating ░▒ pattern
-    sand_unit = "░▒"
+    # Sandy ground borders: soft dot pattern
+    sand_unit = "·."
     sand_fill = (sand_unit * ((inner_w + 1) // 2))[:inner_w]
     ground_top = f"╔{sand_fill}╗"
     ground_bot = f"╚{sand_fill}╝"
@@ -159,9 +159,9 @@ def _compose_display(
 
     # Water surface row (animated)
     if anim_frame % 2 == 0:
-        water_unit = "~ · "
+        water_unit = ". · "
     else:
-        water_unit = " · ~"
+        water_unit = " · ."
     water_surface = (water_unit * ((content_w + len(water_unit) - 1) // len(water_unit)))[:content_w]
     content_lines.append(water_surface)
     content_regions.append(["water"] * content_w)
@@ -365,10 +365,10 @@ class AsciiPalApp:
         if status.stage == "on_break":
             remaining = int(status.break_seconds_remaining)
             mins, secs = divmod(remaining, 60)
-            return [f"\U0001f345 Break: {mins}:{secs:02d}"]
+            return [f"\u00b7 rest: {mins}:{secs:02d}"]
         remaining = int(status.seconds_until_break)
         mins, secs = divmod(remaining, 60)
-        return [f"\U0001f345 Work: {mins}:{secs:02d}"]
+        return [f"\u00b7 focus: {mins}:{secs:02d}"]
 
     def _build_goal_line(self, totals, width: int) -> str:
         goal = getattr(self.config, "session_goal_minutes", 0)
@@ -376,14 +376,14 @@ class AsciiPalApp:
             return ""
         elapsed_minutes = int(totals.total_active_seconds / 60)
         if elapsed_minutes >= goal:
-            return "\U0001f3af GOAL MET!"
+            return "\u2022 goal reached"
         bar_w = min(10, width - 20)
         if bar_w < 1:
             bar_w = 1
         filled = int(bar_w * elapsed_minutes / goal)
         filled = max(0, min(filled, bar_w))
-        bar = "\u2588" * filled + "\u2591" * (bar_w - filled)
-        return f"\U0001f3af Goal: {elapsed_minutes}m/{goal}m [{bar}]"
+        bar = "\u25b0" * filled + "\u25b1" * (bar_w - filled)
+        return f"\u2022 goal: {elapsed_minutes}m/{goal}m [{bar}]"
 
     def run(self) -> None:
         if not self.demo:

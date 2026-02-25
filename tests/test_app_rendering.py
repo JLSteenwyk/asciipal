@@ -132,7 +132,7 @@ def test_top_border_has_wave_pattern() -> None:
         inner_w=30,
     )
     lines = display.text.split("\n")
-    assert "≈" in lines[0]
+    assert "\u00b7" in lines[0] or "\u02d9" in lines[0] or "." in lines[0]
 
 
 def test_pomodoro_panel_appears_when_provided() -> None:
@@ -175,11 +175,11 @@ def test_goal_line_renders_when_provided() -> None:
         status_line="",
         achievement_line="",
         inner_w=40,
-        goal_line="\U0001f3af Goal: 10m/120m",
+        goal_line="\u2022 goal: 10m/120m",
     )
-    assert "Goal:" in display.text
+    assert "goal:" in display.text
     lines = display.text.split("\n")
-    goal_idx = next(i for i, l in enumerate(lines) if "Goal:" in l)
+    goal_idx = next(i for i, l in enumerate(lines) if "goal:" in l)
     assert "goal" in display.regions[goal_idx]
 
 
@@ -192,9 +192,9 @@ def test_streak_line_renders_when_provided() -> None:
         status_line="",
         achievement_line="",
         inner_w=40,
-        streak_line="\U0001f525 Streak: 7 days",
+        streak_line="\u00b7 7 days",
     )
-    assert "Streak:" in display.text
+    assert "7 days" in display.text
     lines = display.text.split("\n")
-    streak_idx = next(i for i, l in enumerate(lines) if "Streak:" in l)
+    streak_idx = next(i for i, l in enumerate(lines) if "7 days" in l)
     assert "streak" in display.regions[streak_idx]

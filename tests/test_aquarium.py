@@ -86,8 +86,8 @@ class TestProgressBar:
 
     def test_half_filled(self) -> None:
         bar = _build_progress_bar(1, 0.5, 30)
-        assert "█" in bar
-        assert "░" in bar
+        assert "\u25b0" in bar
+        assert "\u25b1" in bar
         assert "🌿 1/8" in bar
         assert len(bar) == 30
 
@@ -107,7 +107,7 @@ class TestProgressBar:
         inner_start = bar.index("[") + 1
         inner_end = bar.index("]")
         inner = bar[inner_start:inner_end]
-        assert inner == "█" * len(inner)
+        assert inner == "\u25b0" * len(inner)
 
 
 class TestBuildPlants:
