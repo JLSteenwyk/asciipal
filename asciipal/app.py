@@ -746,14 +746,20 @@ def run(argv: list[str] | None = None) -> int:
         print(f"Note: {warning}", file=sys.stderr)
     for note in app.startup_notes:
         print(f"Note: {note}", file=sys.stderr)
-    if not app.input_monitor.is_supported():
+    input_reason = app.input_monitor.unavailable_reason()
+    if input_reason is not None:
         print(
-            "Warning: global input monitor unavailable. Check platform permissions/runtime.",
+            f"Warning: global input monitor unavailable. {input_reason}.",
+            file=sys.stderr,
+        )
+        print(
+            "Warning: activity reactions will not respond to typing/click/mouse input.",
             file=sys.stderr,
         )
     if args.doctor:
         for line in runtime_summary(
             input_supported=app.input_monitor.is_supported(),
+            input_reason=input_reason,
             headless=app.headless,
             pomodoro_mode=config.pomodoro_mode,
         ):

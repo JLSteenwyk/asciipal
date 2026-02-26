@@ -1,10 +1,12 @@
 from __future__ import annotations
 
 from dataclasses import dataclass
+from platform import system
 from threading import Lock
 from time import monotonic
 from typing import Callable
 
+_IMPORT_ERROR: str | None = None
 
 try:
     # pyobjc 12+ moved AXIsProcessTrusted out of the HIServices lazy-import
@@ -23,9 +25,10 @@ try:
             pass
 
     from pynput import keyboard, mouse
-except Exception:  # pragma: no cover - depends on runtime environment
+except Exception as exc:  # pragma: no cover - depends on runtime environment
     keyboard = None
     mouse = None
+    _IMPORT_ERROR = f"{type(exc).__name__}: {exc}"
 
 
 @dataclass(slots=True)
@@ -70,6 +73,15 @@ class InputMonitor:
 
     def is_supported(self) -> bool:
         return keyboard is not None and mouse is not None
+
+    def unavailable_reason(self) -> str | None:
+        if self.is_supported():
+            return None
+        if _IMPORT_ERROR:
+            return f"input backend unavailable ({_IMPORT_ERROR})"
+        if system() == "Darwin":
+            return "input backend unavailable (check Accessibility permission)"
+        return "input backend unavailable"
 
     def _on_keypress(self, _key) -> None:
         self.callbacks.on_keypress(monotonic())

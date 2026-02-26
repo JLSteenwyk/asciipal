@@ -284,6 +284,9 @@ class Overlay:
 
         # Width stabilisation — ratchets up to the widest content seen.
         self._min_text_width = 0
+        self._last_plain_text: str | None = None
+        self._last_colored_text: str | None = None
+        self._last_colored_regions: list[list[str]] | None = None
 
         # Drag support — bind to both root and text_widget for reliability
         self._user_dragged = False
@@ -356,6 +359,12 @@ class Overlay:
 
     def update_text(self, text: str) -> None:
         """Backward-compatible plain-text update (no color tags)."""
+        if text == self._last_plain_text:
+            return
+        self._last_plain_text = text
+        self._last_colored_text = None
+        self._last_colored_regions = None
+
         lines = text.split("\n")
         max_w = max((len(ln) for ln in lines), default=0)
         if max_w > self._min_text_width:
@@ -373,6 +382,12 @@ class Overlay:
         """Update the widget with colored text using region tags."""
         text = display.text
         regions = display.regions
+        if text == self._last_colored_text and self._last_colored_regions == regions:
+            return
+        self._last_colored_text = text
+        # Store a snapshot to avoid issues if caller mutates after passing.
+        self._last_colored_regions = [row[:] for row in regions]
+        self._last_plain_text = None
 
         lines = text.split("\n")
         max_w = max((len(ln) for ln in lines), default=0)

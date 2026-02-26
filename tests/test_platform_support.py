@@ -20,3 +20,13 @@ def test_runtime_summary_contains_key_fields(monkeypatch) -> None:
     )
     assert any(line.startswith("platform=Darwin") for line in lines)
     assert any(line.startswith("input_monitor_supported=True") for line in lines)
+
+
+def test_runtime_summary_includes_input_reason_when_provided() -> None:
+    lines = platform_support.runtime_summary(
+        input_supported=False,
+        input_reason="missing dependency",
+        headless=False,
+        pomodoro_mode=False,
+    )
+    assert "input_monitor_reason=missing dependency" in lines
